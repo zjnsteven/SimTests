@@ -10,9 +10,9 @@ library(RColorBrewer)
 library(methods)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp("/sciclone/home00/geogdan/MatchIt/demo/splitc.cpp")
-CT_src <- "/sciclone/home00/geogdan/MatchIt/demo/CT_functions.R"
-sim_src <- "/sciclone/home00/geogdan/MatchIt/demo/simulation_spatial_data.R"
+sourceCpp("/sciclone/home00/geogdan/SimTests/demo/splitc.cpp")
+CT_src <- "/sciclone/home00/geogdan/SimTests/demo/CT_functions.R"
+sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
 
 #detach("package:MatchIt", unload=TRUE)
 load_all("/sciclone/home00/geogdan/MatchIt/R")

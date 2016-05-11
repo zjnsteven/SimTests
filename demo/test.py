@@ -10,12 +10,12 @@ rank = comm.Get_rank()
 
 command = 'Rscript'
 
-sim_path = '/sciclone/home00/geogdan/MatchIt/demo/pySims.R'
+sim_path = '/sciclone/home00/geogdan/SimTests/demo/pySims.R'
 
 iterations = 100000
 c = rank
 while c < iterations:
-    out_path = '/sciclone/home00/geogdan/BetaSims/test_'+str(c)+'.csv'
+    out_path = '/sciclone/home00/geogdan/GammaSims/test_'+str(c)+'.csv'
 
     version = "1"
     nrandom = str(max(1000, random.random()*5000))
