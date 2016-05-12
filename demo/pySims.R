@@ -8,6 +8,7 @@ library(Rcpp)
 library(classInt)
 library(RColorBrewer)
 library(methods)
+
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
 sourceCpp("/sciclone/home00/geogdan/SimTests/demo/splitc.cpp")
@@ -19,9 +20,10 @@ load_all("/sciclone/home00/geogdan/MatchIt/R")
 
 #1 3800.41856568 0.90376081592 -45.0 45.0 -22.5 22.5 3.21749654825 0.250852506018 0.448021052911 4.27592030555 0.0684864449219 0.29100048171 1 0.330411927736 3.83573033709 1.88067542642 0.698254286741 0.437623061042 10 2.58494466138 /sciclone/home00/geogdan/AlphaSims/test_0.csv 0.954552979835 0.539550663469 0.164665770447
 #Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "3.21749654825", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "3.83573033709", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/AlphaSims/test_0.csv", "0.954552979835", "0.539550663469", "0.164665770447")
-Args <- commandArgs(trailingOnly = TRUE)
+#Args <- commandArgs(trailingOnly = TRUE)
 print(Args)
 out_path=Args[22]
+out_itDta_path = paste(substr(out_path, 1, nchar(out_path)-4),".RData",sep="")
 nums = as.numeric(Args)
 
 
@@ -120,7 +122,7 @@ model_dta <- spdf[sample(nrow(spdf), (nrandom * sample_size)), ]
 #No Matching
 baseline <- lm(modelOutcome ~ treatment.status +  modelVar, data=model_dta@data)
 outcome.predictions@data$baseline <- predict(baseline, newdata=spdf@data)
-treatment.predictions@data$baseline <- summary(baseline)$coefficients[2]
+treatment.predictions@data$baseline <- (treatment.predictions@data$treatment.status)*summary(baseline)$coefficients[2] 
 nospill.t.pred@data$baseline <- summary(baseline)$coefficients[2]
 
 #Baseline for Comparison
@@ -132,7 +134,7 @@ baseline.model <- lm(modelOutcome ~ treatment.status +  modelVar,
                      data=match.data(baseline.matchit))
 
 outcome.predictions@data$baseline.matchit <- predict(baseline.model, newdata=spdf@data)
-treatment.predictions@data$baseline.matchit <- summary(baseline.model)$coefficients[2]
+treatment.predictions@data$baseline.matchit <- (treatment.predictions@data$treatment.status)*summary(baseline.model)$coefficients[2] 
 nospill.t.pred@data$baseline.matchit <- summary(baseline.model)$coefficients[2]
 
 
@@ -150,7 +152,7 @@ spatial.trueThreshold.model <- lm(modelOutcome ~ treatment.status +  modelVar,
 outcome.predictions@data$spatial.trueThreshold <- predict(spatial.trueThreshold.model,
                                                           newdata=spdf@data)
 treatment.predictions@data$spatial.trueThreshold <-
-  summary(spatial.trueThreshold.model)$coefficients[2]
+  (treatment.predictions@data$treatment.status)*summary(spatial.trueThreshold.model)$coefficients[2] 
 
 nospill.t.pred@data$spatial.trueThreshold <- summary(spatial.trueThreshold.model)$coefficients[2]
 
@@ -216,8 +218,8 @@ spatial.matchit.spill.model <- lm(modelOutcome ~ treatment.status +  modelVar,
 outcome.predictions@data$spatial.matchit.spill <- predict(spatial.matchit.spill.model,
                                                           newdata=spdf@data)
 treatment.predictions@data$spatial.matchit.spill <-
-  ((summary(spatial.matchit.spill.model)$coefficients[2] * nrandom)) /
-  nrandom
+  (treatment.predictions@data$treatment.status)*(((summary(spatial.matchit.spill.model)$coefficients[2] * nrandom)) /
+  nrandom) 
 
 nospill.t.pred@data$spatial.matchit.spill <- summary(spatial.matchit.spill.model)$coefficients[2]
 
@@ -494,5 +496,6 @@ results["tree_split_lim"][p,] <- tree_split_lim
 print(out_path)
 
 write.csv(results,file=out_path)
+save(treatment.predictions,out_itDta_path)
 
 

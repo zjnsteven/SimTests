@@ -19,7 +19,7 @@ library(MatchIt)
 
 
 
-iterations <- 25
+iterations <- 1
 
 results <- data.frame(
   id=c(1:iterations)
@@ -53,7 +53,11 @@ ptm <- proc.time()
   #General psill
   #Note: setting this to 0 will result in no data randomization.
   #Larger values indicate more autocorrelation.
-  psill <- 1 + runif(1, -.95, 20)
+  xvar_psill <- 1 + runif(1, -.95, 20)
+  xvar_error_psill <- 1
+  mod_error_psill <- 1
+  trt_spill_sill <- 1
+  psill <- 1
   
   # define bounding box
   minx <- -45
@@ -578,5 +582,5 @@ ptm <- proc.time()
 
 print(proc.time() - ptm)
 
-
+save(treatment.predictions, )
 
