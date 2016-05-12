@@ -8,14 +8,12 @@ size = comm.Get_size()
 rank = comm.Get_rank()
 
 
-command = 'Rscript'
-
 sim_path = '/sciclone/home00/geogdan/SimTests/demo/pySims.R'
 
-iterations = 2
+iterations = 1000
 c = rank
 while c < iterations:
-    out_path = '/sciclone/home00/geogdan/GammaSims/test_'+str(c)+'.csv'
+    out_path = '/sciclone/home00/geogdan/DeltaSims/test_'+str(c)+'.csv'
 
     version = "1"
     nrandom = str(max(1000, random.random()*5000))
@@ -45,7 +43,7 @@ while c < iterations:
 
 
     try:
-    	R_ret = check_output("Rscript " +
+      R_ret = check_output("Rscript " +
                         sim_path + " " +
                         version + " " +
                         nrandom+ " " +
@@ -72,14 +70,13 @@ while c < iterations:
                         xvar_error_psill+ " "+
                         mod_error_psill+ " "+
                         trt_spill_sill,
-			stderr=STDOUT,
+		                  	stderr=STDOUT,
                         shell=True)
 
-    	print c
-    	print R_ret
-    	print "========================"
+      print c
+      print R_ret
+      print "========================"
 
     except:
-	print "ERROR: Insufficient Matches or another error occured in the R Script. Specifics unknown.  Good luck."
-
+	    print "ERROR: Insufficient Matches or another error occured in the R Script. Specifics unknown.  Good luck."
     c += size

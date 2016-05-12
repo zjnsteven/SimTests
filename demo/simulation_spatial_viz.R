@@ -1,6 +1,9 @@
 #Folder that contains CSVs to be visualized
-res_folder <- "/home/aiddata/Desktop/Sims"
-files <- list.files(path=res_folder, full.names=T, recursive=FALSE)
+library(Cairo)
+res_folder <- "/mnt/sc/DeltaSims"
+files <- list.files(path=res_folder, full.names=T, recursive=FALSE, pattern="\\.csv$")
+
+print(length(files))
 
 for(path in 1:length(files))
 {
@@ -21,7 +24,7 @@ library(plotly)
 viz.sims <- function(results, varH, mtitle, pre="")
 {
   results.plot <- results
-
+  
   
   eval(parse(text=paste("results.plot$v1 <- results.plot$",varH,sep="")))
   results.plot <- results.plot[order(results.plot$v1),]
@@ -41,7 +44,7 @@ viz.sims <- function(results, varH, mtitle, pre="")
   lines(lowess(results.plot$v1,results.plot[paste(pre,"baseline",sep="")][[1]]), col=rgb(1,0,0), pch=3)
   
   lines(lowess(results.plot$v1, 
-        results.plot[paste(pre,"baseline.matchit",sep="")][[1]]), col=rgb(0,0,1), pch=4)
+               results.plot[paste(pre,"baseline.matchit",sep="")][[1]]), col=rgb(0,0,1), pch=4)
   points(results.plot$v1, 
          results.plot[paste(pre,"baseline.matchit",sep="")][[1]], col=rgb(0,0,1,alpha=0.1), pch=4, cex=0.5)
   
@@ -54,7 +57,7 @@ viz.sims <- function(results, varH, mtitle, pre="")
                results.plot[paste(pre,"ct.spill",sep="")][[1]]), col=rgb(1,0.5,0), pch=2)
   points(results.plot$v1, 
          results.plot[paste(pre,"ct.spill",sep="")][[1]], col=rgb(1,0.5,0,alpha=0.1), pch=2, cex=0.5)
-
+  
   #lines(lowess(results.plot$v1, 
   #             results.plot[paste(pre,"matchit.spill.model",sep="")][[1]]), col=rgb(0,1,1), pch=4)
   #points(results.plot$v1, 
@@ -68,9 +71,9 @@ viz.sims <- function(results, varH, mtitle, pre="")
   if(mtitle == "ATE by Model")
   {
     lines(lowess(results.plot$v1, 
-               results.plot[paste(pre,"tot.spill",sep="")][[1]]), col=rgb(0,0,0), pch=3)
-  points(results.plot$v1, 
-         results.plot[paste(pre,"tot.spill",sep="")][[1]], col=rgb(0,0,0,alpha=0.1), pch=3, cex=0.5)
+                 results.plot[paste(pre,"tot.spill",sep="")][[1]]), col=rgb(0,0,0), pch=3)
+    points(results.plot$v1, 
+           results.plot[paste(pre,"tot.spill",sep="")][[1]], col=rgb(0,0,0,alpha=0.1), pch=3, cex=0.5)
   }
   
   legend("topleft",
@@ -83,16 +86,35 @@ viz.sims <- function(results, varH, mtitle, pre="")
                col="black", col=109, col=144), title = "Legend")
 }
 
-#Variable Spillover Magnitude
-viz.sims(results, "spill.magnitude", "ATE by Model")
-viz.sims(results, "var1.vrange", "ATE by Model")
-viz.sims(results, "psill", "ATE by Model")
-viz.sims(results, "prop_acc", "ATE by Model")
-viz.sims(results, "spill.vrange", "ATE by Model")
-viz.sims(results, "caliper", "ATE by Model")
-viz.sims(results, "sample_size", "ATE by Model")
-viz.sims(results, "mod_error.magnitude", "ATE by Model")
-viz.sims(results, "tree_split_lim", "ATE by Model")
+#Viz Creation
+type = "prop_acc"
+fname = paste("/home/aiddata/Desktop/SimViz/",type,"_",length(files),".png",sep="")
+CairoPNG(1600,900,file=fname, bg="white")
+title <- paste("ATE by Model", length(files), sep="")
+viz.sims(results, type, title)
+dev.off()
+
+# results2 <- results[results$mod_error.magnitude < .10,]
+# fname = paste("/home/aiddata/Desktop/SimViz/spill.magnitude_lowError",length(files),".png",sep="")
+# CairoPNG(1600,900,file=fname, bg="white")
+# title <- paste("ATE by Model - Model Error < 0.1 - Sim ", length(files), sep="")
+# viz.sims(results2, "spill.magnitude", title)
+# dev.off()
+# 
+# results3 <- results[results$spill.magnitude < .10,]
+# fname = paste("/home/aiddata/Desktop/SimViz/beta.lowSpill",length(files),".png",sep="")
+# CairoPNG(1600,900,file=fname, bg="white")
+# title <- paste("ATE by Model - Spillover < 0.1 - Sim ", length(files), sep="")
+# viz.sims(results3, "beta", title)
+# dev.off()
+
+#viz.sims(results, "var1.vrange", "ATE by Model")
+#viz.sims(results, "prop_acc", "ATE by Model")
+#viz.sims(results, "spill.vrange", "ATE by Model")
+#viz.sims(results, "caliper", "ATE by Model")
+#viz.sims(results, "sample_size", "ATE by Model")
+#viz.sims(results, "mod_error.magnitude", "ATE by Model")
+#viz.sims(results, "tree_split_lim", "ATE by Model")
 
 #viz.sims(results_out, "spill.magnitude", "Predicted Avg. Outcome")
 #viz.sims(results_out, "var1.vrange", "Predicted Avg. Outcome")
@@ -111,38 +133,37 @@ viz.sims(results, "tree_split_lim", "ATE by Model")
 
 
 #Compare to Truth
-dif_func <- function(results, comparison)
-{
-  results.dif <- results
-  abs.comp <- paste("results.dif$dif.abs.", comparison, 
-                    "<- abs(results.dif$trueTreatment - results.dif$",
-                    comparison,")", sep="")
-  rel.comp <- paste("results.dif$dif.", comparison, 
-                    "<- (results.dif$trueTreatment - results.dif$",
-                    comparison,")", sep="")
-  eval(parse(text=abs.comp))
-  eval(parse(text=rel.comp))
-  return(results.dif)
-  
-}
+# dif_func <- function(results, comparison)
+# {
+#   results.dif <- results
+#   abs.comp <- paste("results.dif$dif.abs.", comparison, 
+#                     "<- abs(results.dif$trueTreatment - results.dif$",
+#                     comparison,")", sep="")
+#   rel.comp <- paste("results.dif$dif.", comparison, 
+#                     "<- (results.dif$trueTreatment - results.dif$",
+#                     comparison,")", sep="")
+#   eval(parse(text=abs.comp))
+#   eval(parse(text=rel.comp))
+#   return(results.dif)
+#   
+# }
+# 
+# results <- dif_func(results, "baseline")
+# results <- dif_func(results, "baseline.matchit")
+# results <- dif_func(results, "spatial.matchit.spill")
+# results <- dif_func(results, "spatial.trueThreshold")
+# results <- dif_func(results, "trueTreatment")
+# results <- dif_func(results, "tot.spill")
+# results <- dif_func(results, "ct.spill")
 
-results <- dif_func(results, "baseline")
-results <- dif_func(results, "baseline.matchit")
-results <- dif_func(results, "spatial.matchit.spill")
-results <- dif_func(results, "spatial.trueThreshold")
-results <- dif_func(results, "trueTreatment")
-results <- dif_func(results, "tot.spill")
-results <- dif_func(results, "ct.spill")
 
 
-
-viz.sims(results, "spill.magnitude", "ATE by Model", "dif.abs.")
-viz.sims(results, "var1.vrange", "ATE by Model", "dif.abs.")
-viz.sims(results, "psill", "ATE by Model", "dif.abs.")
-viz.sims(results, "prop_acc", "ATE by Model", "dif.abs.")
-viz.sims(results, "spill.vrange", "ATE by Model", "dif.abs.")
-viz.sims(results, "caliper", "ATE by Model", "dif.abs.")
-viz.sims(results, "sample_size", "ATE by Model", "dif.abs.")
+#viz.sims(results, "spill.magnitude", "Abs Dif ATE by Model", "dif.abs.")
+#viz.sims(results, "var1.vrange", "Abs Dif ATE by Model", "dif.abs.")
+#viz.sims(results, "prop_acc", "Abs Dif ATE by Model", "dif.abs.")
+#viz.sims(results, "spill.vrange", "Abs Dif ATE by Model", "dif.abs.")
+#viz.sims(results, "caliper", "Abs Dif ATE by Model", "dif.abs.")
+#viz.sims(results, "sample_size", "Abs Dif ATE by Model", "dif.abs.")
 
 #viz.sims(results, "spill.magnitude", "ATE by Model", "dif.")
 #viz.sims(results, "var1.vrange", "ATE by Model", "dif.")

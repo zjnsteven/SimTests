@@ -20,7 +20,7 @@ load_all("/sciclone/home00/geogdan/MatchIt/R")
 
 #1 3800.41856568 0.90376081592 -45.0 45.0 -22.5 22.5 3.21749654825 0.250852506018 0.448021052911 4.27592030555 0.0684864449219 0.29100048171 1 0.330411927736 3.83573033709 1.88067542642 0.698254286741 0.437623061042 10 2.58494466138 /sciclone/home00/geogdan/AlphaSims/test_0.csv 0.954552979835 0.539550663469 0.164665770447
 #Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "3.21749654825", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "3.83573033709", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/AlphaSims/test_0.csv", "0.954552979835", "0.539550663469", "0.164665770447")
-#Args <- commandArgs(trailingOnly = TRUE)
+Args <- commandArgs(trailingOnly = TRUE)
 print(Args)
 out_path=Args[22]
 out_itDta_path = paste(substr(out_path, 1, nchar(out_path)-4),".RData",sep="")
@@ -52,12 +52,11 @@ spill.vrange = as.numeric(Args[16])
 spill.magnitude= as.numeric(Args[17])
 cal= as.numeric(Args[18])
 sample_size = as.numeric(Args[19])
-tree_split_lim= as.numeric(Args[20])
+tree_split_lim= round(as.numeric(Args[20]),0)
 mod_error.vrange= as.numeric(Args[21])
 xvar_psill=as.numeric(Args[23])
 mod_error_psill=as.numeric(Args[24])
 trt_spill_sill=as.numeric(Args[25])
-
 p <- 1
 
 iterations <- 1
@@ -328,7 +327,7 @@ crxvdata$id <- sample(1:k, nrow(crxvdata), replace = TRUE)
 list = 1:k
 fit1 = rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
              crxvdata,
-             control = rpart.control(cp = 0,minsplit = 5),
+             control = rpart.control(cp = 0,minsplit = tree_split_lim),
              method=alist)
 fit = data.matrix(fit1$frame)
 index = as.numeric(rownames(fit1$frame))
@@ -356,7 +355,7 @@ for(l in 1:length(alphacandidate)){
     testset <- subset(crxvdata, id %in% c(i))
     fit1 = rpart (cbind(modelOutcome,treatment.status,m1.pscore,transOutcome)  ~ modelVar + coord1 + coord2,
                   trainingset,
-                  control = rpart.control(cp = alpha,minsplit = 10),
+                  control = rpart.control(cp = alpha,minsplit = tree_split_lim),
                   method=alist)
     
     if(dim(fit1$frame)[1] == 1){
@@ -395,7 +394,7 @@ for(l in 1:length(alphacandidate)){
 tsize = tsize[-1]
 alpha_res = alphacandidate[which.min(errset)]
 fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
-                    crxvdata, control=rpart.control(minsplit=10,cp=alpha_res),
+                    crxvdata, control=rpart.control(minsplit=tree_split_lim,cp=alpha_res),
                     method=alist)
 #prp(fit_ctpred)
 #res = rep(0,length(alphalist)-1)
@@ -447,6 +446,7 @@ results["var1_error.vrange"] <- NA
 results["caliper"] <- NA
 results["sample_size"]<- NA
 results["tree_split_lim"] <- NA
+results["nrandom"] <- NA
 
 results["spill.magnitude"][p,] <- spill.magnitude
 results["xvar_error_psill"][p,]  <- xvar_error_psill
@@ -464,6 +464,7 @@ results["var1_error.vrange"][p,] <- var1_error.vrange
 results["caliper"][p,] <- cal
 results["sample_size"][p,] <- sample_size
 results["tree_split_lim"][p,] <- tree_split_lim
+results["nrandom"][p,] <- nrandom
 
 
 
@@ -493,9 +494,7 @@ results["tree_split_lim"][p,] <- tree_split_lim
 
 #print(proc.time() - ptm)
 
-print(out_path)
-
 write.csv(results,file=out_path)
-save(treatment.predictions,out_itDta_path)
+save(treatment.predictions,file=out_itDta_path)
 
 
