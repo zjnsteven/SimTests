@@ -8,6 +8,8 @@ library(Rcpp)
 library(classInt)
 library(RColorBrewer)
 library(methods)
+library(partykit)
+
 
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
@@ -19,11 +21,11 @@ sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
 load_all("/sciclone/home00/geogdan/MatchIt/R")
 
 #1 3800.41856568 0.90376081592 -45.0 45.0 -22.5 22.5 3.21749654825 0.250852506018 0.448021052911 4.27592030555 0.0684864449219 0.29100048171 1 0.330411927736 3.83573033709 1.88067542642 0.698254286741 0.437623061042 10 2.58494466138 /sciclone/home00/geogdan/AlphaSims/test_0.csv 0.954552979835 0.539550663469 0.164665770447
-#Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "3.21749654825", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "3.83573033709", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/AlphaSims/test_0.csv", "0.954552979835", "0.539550663469", "0.164665770447")
-Args <- commandArgs(trailingOnly = TRUE)
+Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "3.21749654825", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "3.83573033709", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/may_a/test_0.csv", "0.954552979835", "0.539550663469", "0.164665770447")
+#Args <- commandArgs(trailingOnly = TRUE)
 print(Args)
 out_path=Args[22]
-out_itDta_path = paste(substr(out_path, 1, nchar(out_path)-4),".RData",sep="")
+out_itDta_path = paste(substr(out_path, 1, nchar(out_path)-4),"_dta.csv",sep="")
 nums = as.numeric(Args)
 
 
@@ -317,6 +319,7 @@ alist <- list(eval=ctev, split=ctsplit, init=ctinit)
 
 #trans_dta
 dbb = trans_dta@data
+#write.csv(trans_dta@data, out_itDta_path)
 k = 10
 n = dim(dbb)[1]
 #sample_size = floor(n)
@@ -325,7 +328,7 @@ n = dim(dbb)[1]
 crxvdata = dbb
 crxvdata$id <- sample(1:k, nrow(crxvdata), replace = TRUE)
 list = 1:k
-fit1 = rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
+fit1 = rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar, #+ coord1 + coord2,
              crxvdata,
              control = rpart.control(cp = 0,minsplit = tree_split_lim),
              method=alist)
@@ -350,34 +353,35 @@ for(l in 1:length(alphacandidate)){
   alpha = alphacandidate[l]
   error = 0
   treesize = 0
+  #print(alpha)
   for (i in 1:k){
     trainingset <- subset(crxvdata, id %in% list[-i])
     testset <- subset(crxvdata, id %in% c(i))
-    fit1 = rpart (cbind(modelOutcome,treatment.status,m1.pscore,transOutcome)  ~ modelVar + coord1 + coord2,
+    fit1 = rpart (cbind(modelOutcome,treatment.status,m1.pscore,transOutcome)  ~ modelVar, #+ coord1 + coord2,
                   trainingset,
                   control = rpart.control(cp = alpha,minsplit = tree_split_lim),
                   method=alist)
     
-    if(dim(fit1$frame)[1] == 1){
-      error = 0
-      break
-    }
+  #if(dim(fit1$frame)[1] == 1){
+  #    error = 0
+  #    break
+  #  }
     
-    else{
+  #  else{
       treesize = treesize + dim(fit1$frame[which(fit1$frame$var=="<leaf>"),])[1]
       pt = predict(fit1,testset,type = "matrix")
       y = data.frame(pt)
       val = data.matrix(y)
       idx = as.numeric(rownames(y))
       dbidx = as.numeric(rownames(dbb))
-      
+      #print(dim(y)[1])
       for(pid in 1:(dim(y)[1])){
         id = match(idx[pid],dbidx)
         error = error + (crxvdata$transOutcome[id] - val[pid])^2
         #print(error)
       }
-    }
-    
+    #}
+    print(error)
   }
   
   tsize = c(tsize,treesize/k)
@@ -393,7 +397,7 @@ for(l in 1:length(alphacandidate)){
 
 tsize = tsize[-1]
 alpha_res = alphacandidate[which.min(errset)]
-fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
+fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar, #+ coord1 + coord2,
                     crxvdata, control=rpart.control(minsplit=tree_split_lim,cp=alpha_res),
                     method=alist)
 #prp(fit_ctpred)
@@ -410,10 +414,49 @@ treatment.predictions@data$ct.spill <-  predict(fit_ctpred,newdata=spdf@data) * 
 
 
 
+
+#Propensity Tree
+dbb = trans_dta@data
+crxvdata = dbb
+
+idx = sample(sample(1:2, nrow(crxvdata), replace = TRUE))
+trainingset <- subset(crxvdata, idx %in% 1)
+testset <- subset(crxvdata, idx %in% 2)
+# half data for the propensity tree
+fit1 = rpart(treatment.status ~ modelVar, method="class", data=crxvdata)
+#prp(fit1)
+id = c(1:dim(fit1$frame)[1])
+leafs = id[which(as.character(fit1$frame$var) == "<leaf>")]
+
+# half for estimation
+fit = as.party(fit1)
+#Dan added spdf@data here - it's wrong, but testing.
+testset = spdf@data
+node_id =  predict(fit,testset,type="node")
+res = 0
+
+res = rep(0,length(leafs))
+id = c(1:dim(testset)[1])
+
+for(i in 1:length(leafs)){
+  leaf = leafs[i]
+  nodes = id[node_id==leaf]
+  df = testset[nodes,]
+  trtcount = length(df$trueOutcome[df$treatment.status==1])
+  untrtcount = length(df$trueOutcome[df$treatment.status==0])
+  treated = sum(df$trueOutcome[df$treatment.status==1])
+  untreated = sum(df$trueOutcome[df$treatment.status==0])
+  res[i] = treated/trtcount - untreated/untrtcount
+}
+
+treatment.predictions@data$propensity.tree = unlist(lapply(as.numeric(node_id),function(x) res[match(x,leafs)]))
+
+
+
+
+
+
 #Save Summary Results
-
-
-
 for(i in 4:length(treatment.predictions@data))
 {
   if(p == 1)
@@ -447,6 +490,7 @@ results["caliper"] <- NA
 results["sample_size"]<- NA
 results["tree_split_lim"] <- NA
 results["nrandom"] <- NA
+results["ct_split_count"] <- NA
 
 results["spill.magnitude"][p,] <- spill.magnitude
 results["xvar_error_psill"][p,]  <- xvar_error_psill
@@ -465,6 +509,8 @@ results["caliper"][p,] <- cal
 results["sample_size"][p,] <- sample_size
 results["tree_split_lim"][p,] <- tree_split_lim
 results["nrandom"][p,] <- nrandom
+results["ct_split_count"][p,] <- length(unique(fit_ctpred$where))
+
 
 
 
@@ -495,6 +541,6 @@ results["nrandom"][p,] <- nrandom
 #print(proc.time() - ptm)
 
 write.csv(results,file=out_path)
-save(treatment.predictions,file=out_itDta_path)
+write.csv(trans_dta@data,file=out_itDta_path)
 
 

@@ -10,13 +10,13 @@ rank = comm.Get_rank()
 
 sim_path = '/sciclone/home00/geogdan/SimTests/demo/pySims.R'
 
-iterations = 1000
+iterations = 100
 c = rank
 while c < iterations:
-    out_path = '/sciclone/home00/geogdan/DeltaSims/test_'+str(c)+'.csv'
+    out_path = '/sciclone/home00/geogdan/may_a/test_'+str(c)+'.csv'
 
     version = "1"
-    nrandom = str(max(1000, random.random()*5000))
+    nrandom = str(100 + random.random()*10000)
     xvar_psill = ".1" #str(max(0.05,random.random()*1.0))
     minx = "-45.0"
     maxx = "45.0"
@@ -25,15 +25,15 @@ while c < iterations:
 
     var1_vrange = ".1"#str(max(0.1, random.random()*5))
     var1_error = ".1"#str(max(0.1, random.random()*5))
-    prop_acc = str(max(0.1, random.random()*.9))
+    prop_acc = str(0.7 + random.random()*.29)
     var1_error_vrange = "0.1"#str(max(0.1, random.random()*5))
     mod_error_magnitude = "0"#str(max(0.05, random.random()*2))
-    trt_prc = str(max(0.2, random.random()*0.5))
+    trt_prc = str(0.2 + random.random() * 0.3)
     theta = "1"
     beta = str(max(0.2, random.random()*5))
     spill_vrange = "0.1"#str(max(0.1, random.random()*5))
     spill_magnitude= "0"#str(max(0.05, random.random()*2))
-    cal= str(max(0.25, random.random()*1))
+    cal= str(0.25 + random.random()*1.75)
     sample_size = str(max(0.1, random.random()*1))
     tree_split_lim=str(max(10, random.random()*50))
     mod_error_vrange="0.1" #str(max(0.1, random.random()*5))
@@ -79,4 +79,29 @@ while c < iterations:
 
     except:
 	    print "ERROR: Insufficient Matches or another error occured in the R Script. Specifics unknown.  Good luck."
+	    print version
+	    print nrandom 
+	    print xvar_psill 
+	    print minx
+	    print maxx 
+	    print miny
+	    print maxy
+	    print var1_vrange
+	    print var1_error
+	    print prop_acc 
+	    print var1_error_vrange 
+	    print mod_error_magnitude 
+	    print trt_prc 
+	    print theta 
+	    print beta 
+	    print spill_vrange 
+	    print spill_magnitude
+	    print cal
+	    print sample_size
+	    print tree_split_lim
+	    print mod_error_vrange
+	    print xvar_error_psill 
+	    print mod_error_psill 
+	    print trt_spill_sill
+      
     c += size
