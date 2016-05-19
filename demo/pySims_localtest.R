@@ -13,22 +13,16 @@ library(partykit)
 
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp("/sciclone/home00/geogdan/SimTests/demo/splitc.cpp")
-CT_src <- "/sciclone/home00/geogdan/SimTests/demo/CT_functions.R"
-sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
+sourceCpp("/mnt/sc/SimTests/demo/splitc.cpp")
+CT_src <- "/mnt/sc/SimTests/demo/CT_functions.R"
+sim_src <- "/mnt/sc/SimTests/demo/simulation_spatial_data.R"
 
 #detach("package:MatchIt", unload=TRUE)
-load_all("/sciclone/home00/geogdan/MatchIt/R")
+load_all("/mnt/sc/SimTests/R")
 
 #1 3800.41856568 0.90376081592 -45.0 45.0 -22.5 22.5 3.21749654825 0.250852506018 0.448021052911 4.27592030555 0.0684864449219 0.29100048171 1 0.330411927736 3.83573033709 1.88067542642 0.698254286741 0.437623061042 10 2.58494466138 /sciclone/home00/geogdan/AlphaSims/test_0.csv 0.954552979835 0.539550663469 0.164665770447
-Args <- commandArgs(trailingOnly = TRUE)
-
-if(length(Args) == 0)
-{
-  #Exception for running the script directly without a call.
-Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "3.21749654825", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "3.83573033709", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/may_a/test_0.csv", "0.954552979835", "0.539550663469", "0.164665770447")
-}
-
+Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "3.21749654825", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "3.83573033709", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/mnt/sc/SimTests/demo/test_0.csv", "0.954552979835", "0.539550663469", "0.164665770447")
+#Args <- commandArgs(trailingOnly = TRUE)
 print(Args)
 out_path=Args[22]
 out_itDta_path = paste(substr(out_path, 1, nchar(out_path)-4),"_dta.csv",sep="")
@@ -41,7 +35,7 @@ nums = as.numeric(Args)
 # -----------------------------------------------------------------------------
 
 version = Args[1]
-nrandom = round(as.numeric(Args[2]), 0)
+nrandom = as.numeric(Args[2])
 xvar_error_psill = as.numeric(Args[3])
 minx = as.numeric(Args[4])
 maxx = as.numeric(Args[5])
@@ -60,19 +54,12 @@ spill.vrange = as.numeric(Args[16])
 spill.magnitude= as.numeric(Args[17])
 cal= as.numeric(Args[18])
 sample_size = as.numeric(Args[19])
-tree_split_lim= round(as.numeric(Args[20])*(nrandom * sample_size),0) 
+tree_split_lim= round(as.numeric(Args[20]),0)
 mod_error.vrange= as.numeric(Args[21])
 xvar_psill=as.numeric(Args[23])
 mod_error_psill=as.numeric(Args[24])
 trt_spill_sill=as.numeric(Args[25])
 p <- 1
-
-print("Total Size / Sample Size / Tree Split Limit:")
-print(nrandom)
-print(sample_size)
-print(tree_split_lim)
-per_split_lim <- tree_split_lim / sample_size
-
 
 iterations <- 1
 results <- data.frame(
@@ -139,8 +126,6 @@ outcome.predictions@data$baseline <- predict(baseline, newdata=spdf@data)
 treatment.predictions@data$baseline <- (treatment.predictions@data$treatment.status)*summary(baseline)$coefficients[2] 
 nospill.t.pred@data$baseline <- summary(baseline)$coefficients[2]
 
-
-
 #Baseline for Comparison
 baseline.matchit <- matchit(treatment.status ~ modelVar, data= model_dta@data,
                             method="nearest", distance="logit",
@@ -183,7 +168,7 @@ correlog.pscore.spillover <- correlog(x=p_cor_spdf@coords[, 1],
                                       y=p_cor_spdf@coords[, 2],
                                       z=p_cor_spdf$treatment.status,
                                       increment=500,
-                                      latlon=TRUE, na.rm=TRUE, resamp=2,
+                                      latlon=TRUE, na.rm=TRUE, resamp=5,
                                       quiet=FALSE)
 
 pscore.spillover.model.dta <- data.frame(
@@ -243,43 +228,21 @@ p_cor_spdf@data["coord1"] <- coordinates(p_cor_spdf)[,1]
 p_cor_spdf@data["coord2"] <- coordinates(p_cor_spdf)[,2]
 
 #TOT - Non Random Forest
-
-#Simple P-Score for Testing
-p.score <- lm(treatment.status ~ 0 + modelVar, data=model_dta@data)
-p_cor_spdf@data$m1.pscore <- predict(p.score, newdata=p_cor_spdf@data)
-
-#Simple caliper for testing
-upper_lim <- (sd(p_cor_spdf@data$m1.pscore, na.rm=TRUE) * cal) + mean(p_cor_spdf@data$m1.pscore)
-lower_lim <-  mean(p_cor_spdf@data$m1.pscore) - (sd(p_cor_spdf@data$m1.pscore, na.rm=TRUE) * cal) 
-
-
 trans_dta <- p_cor_spdf
-
-#trans_dta <- trans_dta[trans_dta@data$m1.pscore < upper_lim,]
-#trans_dta <- trans_dta[trans_dta@data$m1.pscore > lower_lim,]
-
 trans_dta <- trans_dta[(trans_dta@data$m1.pscore != 0 &
                           trans_dta@data$m1.pscore != 1),]
 
-  
-
-
-
 transOutcome <- list(rep(0,nrow(trans_dta)))
 
-for(i in 1:nrow(trans_dta))
+for(i in 1:nrow(p_cor_spdf))
 {
   if(trans_dta$treatment.status[i] == 1)
   {
-    #Treated
-    transOutcome[i] = trans_dta@data$modelOutcome[i] * 
-      (1 / trans_dta@data$m1.pscore[i])
+    transOutcome[i] = trans_dta@data$modelOutcome[i] / trans_dta@data$m1.pscore[i]
   }
   else
   {
-    #Untreated
-    transOutcome[i] = -1 * (trans_dta@data$modelOutcome[i] * 
-      ((1-0) / (1 - trans_dta@data$m1.pscore[i])))
+    transOutcome[i] = trans_dta@data$modelOutcome[i] / (1-trans_dta@data$m1.pscore[i])
   }
 }
 trans_dta@data$transOutcome <- unlist(transOutcome)
@@ -376,33 +339,21 @@ tsize = dim(fit1$frame[which(fit1$frame$var=="<leaf>"),])[1]
 alpha = 0
 alphalist = 0
 alphalist = cross_validate(fit, index,alphalist)
-if(alphalist[1]==0 & alphalist[2]==0){
-  alphalist = alphalist[-1]
-}
+
 res = rep(0,length(alphalist)-1)
-if(length(alphalist) <= 2){
-  res = alphalist
-}else{
-  for(j in 2:(length(alphalist)-1)){
-    res[j] = sqrt(alphalist[j]*alphalist[j+1])
-  }
+for(j in 2:(length(alphalist)-1)){
+  res[j] = sqrt(alphalist[j]*alphalist[j+1])
 }
 
 alphacandidate = res
 alphaset = rep(0,length(alphacandidate))
 errset = rep(0,length(alphacandidate))
 tsize = 0
-print("AlphaCandidate:")
-print(alphacandidate)
 for(l in 1:length(alphacandidate)){
   alpha = alphacandidate[l]
   error = 0
   treesize = 0
-  print("--")
-  print("Alpha (alphacandidate[l]:)")
-  print(l)
-  print(alpha)
-  print("--")
+  #print(alpha)
   for (i in 1:k){
     trainingset <- subset(crxvdata, id %in% list[-i])
     testset <- subset(crxvdata, id %in% c(i))
@@ -449,8 +400,6 @@ for(l in 1:length(alphacandidate)){
 
 tsize = tsize[-1]
 alpha_res = alphacandidate[which.min(errset)]
-print(alpha_res)
-
 fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar, #+ coord1 + coord2,
                     crxvdata, control=rpart.control(minsplit=tree_split_lim,cp=alpha_res),
                     method=alist)
@@ -561,7 +510,7 @@ results["theta"][p,] <- theta
 results["var1_error.vrange"][p,] <- var1_error.vrange
 results["caliper"][p,] <- cal
 results["sample_size"][p,] <- sample_size
-results["tree_split_lim"][p,] <- per_split_lim
+results["tree_split_lim"][p,] <- tree_split_lim
 results["nrandom"][p,] <- nrandom
 results["ct_split_count"][p,] <- length(unique(fit_ctpred$where))
 

@@ -15,7 +15,7 @@ c = rank
 nonfit_cnt = 0
 while c < iterations:
     print "Worker - rank %d on %s."%(rank, name) 
-    out_path = '/sciclone/home00/geogdan/may_b/sim_'+str(c)+'.csv'
+    out_path = '/sciclone/home00/geogdan/may_c/sim_'+str(c)+'.csv'
 
     version = "1"
     nrandom = str(100 + random.random()*10000)
@@ -25,23 +25,23 @@ while c < iterations:
     miny = "-22.5"
     maxy = "22.5"
 
-    var1_vrange = ".1"#str(max(0.1, random.random()*5))
-    var1_error = "0"#str(max(0.1, random.random()*5))
-    prop_acc = str(0.7 + random.random()*.29)
-    var1_error_vrange = "0.1"#str(max(0.1, random.random()*5))
-    mod_error_magnitude = "0"#str(max(0.05, random.random()*2))
+    var1_vrange = str(0.1 + random.random()*2)
+    var1_error = str(0.1 + random.random()*2)
+    prop_acc = str(0.1 + random.random()*.89)
+    var1_error_vrange = str(0.1 + random.random()*2)
+    mod_error_magnitude = str(0.1 + random.random()*2)
     trt_prc = str(0.2 + random.random() * 0.3)
     theta = "1"
-    beta = str(max(0.2, random.random()*5))
-    spill_vrange = "0.1"#str(max(0.1, random.random()*5))
-    spill_magnitude= "0"#str(max(0.05, random.random()*2))
+    beta = str(0.2 + random.random()*5)
+    spill_vrange = str(0.1 + random.random()*5)
+    spill_magnitude= str(0.05 + random.random()*2)
     cal= str(0.25 + random.random()*1.75)
     sample_size = str(0.1 + random.random()*0.9)
-    tree_split_lim=str(0.1 + random.random()*0.3)
-    mod_error_vrange="0.1" #str(max(0.1, random.random()*5))
-    xvar_error_psill ="0.1" #str(max(0.05,random.random()*1.0))
-    mod_error_psill = "0.1" #str(max(0.05,random.random()*1.0))
-    trt_spill_sill = "0.1"#str(max(0.05,random.random()*1.0))
+    tree_split_lim=str(0.01 + random.random()*0.1)
+    mod_error_vrange= str(0.1 + random.random()*2)
+    xvar_error_psill =str(0.1 + random.random()*0.9)
+    mod_error_psill = str(0.1 + random.random()*0.9)
+    trt_spill_sill = str(0.1 + random.random()*0.9)
 
 
     try:

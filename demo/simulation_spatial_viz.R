@@ -1,6 +1,7 @@
 #Folder that contains CSVs to be visualized
+rm()
 library(Cairo)
-res_folder <- "/mnt/sc/may_a"
+res_folder <- "/mnt/sc/may_c"
 files <- list.files(path=res_folder, full.names=T, recursive=FALSE, pattern="\\.csv$")
 
 files <- files[-grep("dta",files)]
@@ -89,12 +90,18 @@ viz.sims <- function(results, varH, mtitle, pre="")
 }
 
 #Viz Creation
-type = "ct_split_count"
+
+viz.list=c("nrandom","beta", "ct_split_count", "prop_acc", "tree_split_lim", "caliper", "spill.magnitude", "spill.vrange", "var1.vrange")
+
+for(type in viz.list)
+{
 fname = paste("/home/aiddata/Desktop/SimViz/",type,"_",length(files),".png",sep="")
 CairoPNG(1600,900,file=fname, bg="white")
 title <- paste("ATE by Model", length(files), sep="")
 viz.sims(results, type, title)
 dev.off()
+}
+
 
 # results2 <- results[results$mod_error.magnitude < .10,]
 # fname = paste("/home/aiddata/Desktop/SimViz/spill.magnitude_lowError",length(files),".png",sep="")
