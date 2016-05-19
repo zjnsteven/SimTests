@@ -18,7 +18,7 @@ CT_src <- "/sciclone/home00/geogdan/SimTests/demo/CT_functions.R"
 sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
 
 #detach("package:MatchIt", unload=TRUE)
-load_all("/sciclone/home00/geogdan/MatchIt/R")
+load_all("/sciclone/home00/geogdan/SimTests/R")
 
 #1 3800.41856568 0.90376081592 -45.0 45.0 -22.5 22.5 3.21749654825 0.250852506018 0.448021052911 4.27592030555 0.0684864449219 0.29100048171 1 0.330411927736 3.83573033709 1.88067542642 0.698254286741 0.437623061042 10 2.58494466138 /sciclone/home00/geogdan/AlphaSims/test_0.csv 0.954552979835 0.539550663469 0.164665770447
 Args <- commandArgs(trailingOnly = TRUE)
