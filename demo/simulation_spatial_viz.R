@@ -1,7 +1,7 @@
 #Folder that contains CSVs to be visualized
 rm()
 library(Cairo)
-res_folder <- "/mnt/sc/may_c"
+res_folder <- "/mnt/sc/OverlapC_TreeProp"
 files <- list.files(path=res_folder, full.names=T, recursive=FALSE, pattern="\\.csv$")
 
 files <- files[-grep("dta",files)]
@@ -27,20 +27,22 @@ library(plotly)
 viz.sims <- function(results, varH, mtitle, pre="")
 {
   results.plot <- results
+  alpha.set = 0.01
+  cex.set = 0.1
   
   
   eval(parse(text=paste("results.plot$v1 <- results.plot$",varH,sep="")))
   results.plot <- results.plot[order(results.plot$v1),]
-  ylower <- min(results.plot[paste(pre,"ct.spill",sep="")]) - (2*abs(min(results.plot[paste(pre,"trueTreatment",sep="")])))
-  yupper <- max(results.plot[paste(pre,"ct.spill",sep="")]) 
-  if(mtitle == "ATE by Model")
-  {
-    yupper <- max(results.plot[paste(pre,"propensity.tree",sep="")]) * 1.25
-  }
+  ylower <- -2.0#min(results.plot[paste(pre,"ct.spill",sep="")]) - (2*abs(min(results.plot[paste(pre,"trueTreatment",sep="")])))
+  yupper <- 50.0#max(results.plot[paste(pre,"trueTreatment",sep="")]) 
+  #if(mtitle == "ATE by Model")
+  #{
+  #  yupper <- max(results.plot[paste(pre,"propensity.tree",sep="")]) * 1.25
+  #}
   plot(ylim=c(ylower,yupper), 
        results.plot$v1, 
        results.plot[paste(pre,"baseline",sep="")][[1]], 
-       col=rgb(1,0,0,alpha=0.1), pch=3, cex=0.5,
+       col=rgb(1,0,0,alpha=alpha.set), pch=3, cex=cex.set,
        main=mtitle,
        ylab="Estimate",
        xlab=varH)
@@ -49,34 +51,34 @@ viz.sims <- function(results, varH, mtitle, pre="")
   lines(lowess(results.plot$v1, 
                results.plot[paste(pre,"baseline.matchit",sep="")][[1]]), col=rgb(0,0,1), pch=4)
   points(results.plot$v1, 
-         results.plot[paste(pre,"baseline.matchit",sep="")][[1]], col=rgb(0,0,1,alpha=0.1), pch=4, cex=0.5)
+         results.plot[paste(pre,"baseline.matchit",sep="")][[1]], col=rgb(0,0,1,alpha=alpha.set), pch=4, cex=cex.set)
   
   lines(lowess(results.plot$v1, 
                results.plot[paste(pre,"trueTreatment",sep="")][[1]]), col=rgb(0,1,0), pch=4)
   points(results.plot$v1, 
-         results.plot[paste(pre,"trueTreatment",sep="")][[1]], col=rgb(0,1,0,alpha=0.1), pch=4, cex=0.5)
+         results.plot[paste(pre,"trueTreatment",sep="")][[1]], col=rgb(0,1,0,alpha=alpha.set), pch=4, cex=cex.set)
   
   lines(lowess(results.plot$v1, 
                results.plot[paste(pre,"ct.spill",sep="")][[1]]), col=rgb(1,0.5,0), pch=2)
   points(results.plot$v1, 
-         results.plot[paste(pre,"ct.spill",sep="")][[1]], col=rgb(1,0.5,0,alpha=0.1), pch=2, cex=0.5)
+         results.plot[paste(pre,"ct.spill",sep="")][[1]], col=rgb(1,0.5,0,alpha=alpha.set), pch=2, cex=cex.set)
   
   lines(lowess(results.plot$v1, 
                results.plot[paste(pre,"propensity.tree",sep="")][[1]]), col=rgb(0,1,1), pch=4)
   points(results.plot$v1, 
-                results.plot[paste(pre,"propensity.tree",sep="")][[1]], col=rgb(0,1,1,alpha=0.1), pch=4, cex=0.5)
+                results.plot[paste(pre,"propensity.tree",sep="")][[1]], col=rgb(0,1,1,alpha=alpha.set), pch=4, cex=cex.set)
   
   lines(lowess(results.plot$v1, 
                results.plot[paste(pre,"spatial.matchit.spill",sep="")][[1]]), col=rgb(0.5,0.5,0.5), pch=4)
   points(results.plot$v1, 
-         results.plot[paste(pre,"spatial.matchit.spill",sep="")][[1]], col=rgb(0.5,0.5,0.5,alpha=0.1), pch=4, cex=0.5)
+         results.plot[paste(pre,"spatial.matchit.spill",sep="")][[1]], col=rgb(0.5,0.5,0.5,alpha=alpha.set), pch=4, cex=cex.set)
   
   if(mtitle == "ATE by Model")
   {
     lines(lowess(results.plot$v1, 
                  results.plot[paste(pre,"tot.spill",sep="")][[1]]), col=rgb(0,0,0), pch=3)
     points(results.plot$v1, 
-           results.plot[paste(pre,"tot.spill",sep="")][[1]], col=rgb(0,0,0,alpha=0.1), pch=3, cex=0.5)
+           results.plot[paste(pre,"tot.spill",sep="")][[1]], col=rgb(0,0,0,alpha=alpha.set), pch=3, cex=cex.set)
   }
   
   legend("topleft",
@@ -91,7 +93,7 @@ viz.sims <- function(results, varH, mtitle, pre="")
 
 #Viz Creation
 
-viz.list=c("nrandom","beta", "ct_split_count", "prop_acc", "tree_split_lim", "caliper", "spill.magnitude", "spill.vrange", "var1.vrange")
+viz.list=c("nrandom","beta", "ct_split_count", "prop_acc", "tree_split_lim", "caliper", "spill.magnitude", "spill.vrange", "var1.vrange", "trt_spill_sill")
 
 for(type in viz.list)
 {

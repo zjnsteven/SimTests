@@ -245,8 +245,8 @@ p_cor_spdf@data["coord2"] <- coordinates(p_cor_spdf)[,2]
 #TOT - Non Random Forest
 
 #Simple P-Score for Testing
-p.score <- lm(treatment.status ~ 0 + modelVar, data=model_dta@data)
-p_cor_spdf@data$m1.pscore <- predict(p.score, newdata=p_cor_spdf@data)
+#p.score <- lm(treatment.status ~ 0 + modelVar, data=model_dta@data)
+#p_cor_spdf@data$m1.pscore <- predict(p.score, newdata=p_cor_spdf@data)
 
 #Simple caliper for testing
 upper_lim <- (sd(p_cor_spdf@data$m1.pscore, na.rm=TRUE) * cal) + mean(p_cor_spdf@data$m1.pscore)
@@ -365,7 +365,7 @@ n = dim(dbb)[1]
 crxvdata = dbb
 crxvdata$id <- sample(1:k, nrow(crxvdata), replace = TRUE)
 list = 1:k
-fit1 = rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar, #+ coord1 + coord2,
+fit1 = rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
              crxvdata,
              control = rpart.control(cp = 0,minsplit = tree_split_lim),
              method=alist)
@@ -376,9 +376,9 @@ tsize = dim(fit1$frame[which(fit1$frame$var=="<leaf>"),])[1]
 alpha = 0
 alphalist = 0
 alphalist = cross_validate(fit, index,alphalist)
-if(alphalist[1]==0 & alphalist[2]==0){
-  alphalist = alphalist[-1]
-}
+#if(alphalist[1]==0 & alphalist[2]==0){
+#  alphalist = alphalist[-1]
+#}
 res = rep(0,length(alphalist)-1)
 if(length(alphalist) <= 2){
   res = alphalist
@@ -406,7 +406,7 @@ for(l in 1:length(alphacandidate)){
   for (i in 1:k){
     trainingset <- subset(crxvdata, id %in% list[-i])
     testset <- subset(crxvdata, id %in% c(i))
-    fit1 = rpart (cbind(modelOutcome,treatment.status,m1.pscore,transOutcome)  ~ modelVar, #+ coord1 + coord2,
+    fit1 = rpart (cbind(modelOutcome,treatment.status,m1.pscore,transOutcome)  ~ modelVar + coord1 + coord2,
                   trainingset,
                   control = rpart.control(cp = alpha,minsplit = tree_split_lim),
                   method=alist)
@@ -451,7 +451,7 @@ tsize = tsize[-1]
 alpha_res = alphacandidate[which.min(errset)]
 print(alpha_res)
 
-fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar, #+ coord1 + coord2,
+fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
                     crxvdata, control=rpart.control(minsplit=tree_split_lim,cp=alpha_res),
                     method=alist)
 #prp(fit_ctpred)
@@ -459,6 +459,8 @@ fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) 
 #for(j in 2:(length(alphalist)-1)){
 #  res[j] = sqrt(alphalist[j]*alphalist[j+1])
 #}
+
+print(fit_ctpred$frame)
 
 #Total Outcome - CT
 
@@ -477,7 +479,7 @@ idx = sample(sample(1:2, nrow(crxvdata), replace = TRUE))
 trainingset <- subset(crxvdata, idx %in% 1)
 testset <- subset(crxvdata, idx %in% 2)
 # half data for the propensity tree
-fit1 = rpart(treatment.status ~ modelVar, method="class", data=crxvdata)
+fit1 = rpart(treatment.status ~ modelVar + coord1 + coord2, method="class", data=crxvdata)
 #prp(fit1)
 id = c(1:dim(fit1$frame)[1])
 leafs = id[which(as.character(fit1$frame$var) == "<leaf>")]
