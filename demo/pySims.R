@@ -16,6 +16,7 @@ Sys.setenv("PKG_LIBS"="-fopenmp")
 sourceCpp("/sciclone/home00/geogdan/SimTests/demo/splitc.cpp")
 CT_src <- "/sciclone/home00/geogdan/SimTests/demo/CT_functions.R"
 sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
+map_out <- "/sciclone/home00/geogdan/maps/"
 
 #detach("package:MatchIt", unload=TRUE)
 load_all("/sciclone/home00/geogdan/SimTests/R")
@@ -26,7 +27,7 @@ Args <- commandArgs(trailingOnly = TRUE)
 if(length(Args) == 0)
 {
   #Exception for running the script directly without a call.
-Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "3.21749654825", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "3.83573033709", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/may_a/test_0.csv", "0.954552979835", "0.539550663469", "0.164665770447")
+Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "50000", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "50000", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/may_a/test_0.csv", "0.954552979835", "0.539550663469", "50000")
 }
 
 print(Args)
@@ -156,7 +157,7 @@ nospill.t.pred@data$baseline.matchit <- summary(baseline.model)$coefficients[2]
 
 #Cheating Spatial PSM - we give the accurate vrange, and use it as a threshold.
 spatial.opts <- list(decay.model = "threshold",
-                     threshold = spill.vrange)
+                     threshold = (spill.vrange/1000/111.32))
 
 spatial.trueThreshold <- matchit(treatment.status ~ modelVar, data= model_dta,
                                  method = "nearest", distance = "logit",
@@ -471,41 +472,41 @@ treatment.predictions@data$ct.spill <-  predict(fit_ctpred,newdata=spdf@data) * 
 
 
 
-#Propensity Tree
-dbb = trans_dta@data
-crxvdata = dbb
-
-idx = sample(sample(1:2, nrow(crxvdata), replace = TRUE))
-trainingset <- subset(crxvdata, idx %in% 1)
-testset <- subset(crxvdata, idx %in% 2)
-# half data for the propensity tree
-fit1 = rpart(treatment.status ~ modelVar + coord1 + coord2, method="class", data=crxvdata)
-#prp(fit1)
-id = c(1:dim(fit1$frame)[1])
-leafs = id[which(as.character(fit1$frame$var) == "<leaf>")]
-
-# half for estimation
-fit = as.party(fit1)
-#Dan added spdf@data here - it's wrong, but testing.
-testset = spdf@data
-node_id =  predict(fit,testset,type="node")
-res = 0
-
-res = rep(0,length(leafs))
-id = c(1:dim(testset)[1])
-
-for(i in 1:length(leafs)){
-  leaf = leafs[i]
-  nodes = id[node_id==leaf]
-  df = testset[nodes,]
-  trtcount = length(df$trueOutcome[df$treatment.status==1])
-  untrtcount = length(df$trueOutcome[df$treatment.status==0])
-  treated = sum(df$trueOutcome[df$treatment.status==1])
-  untreated = sum(df$trueOutcome[df$treatment.status==0])
-  res[i] = treated/trtcount - untreated/untrtcount
-}
-
-treatment.predictions@data$propensity.tree = unlist(lapply(as.numeric(node_id),function(x) res[match(x,leafs)]))
+# #Propensity Tree
+# dbb = trans_dta@data
+# crxvdata = dbb
+# 
+# idx = sample(sample(1:2, nrow(crxvdata), replace = TRUE))
+# trainingset <- subset(crxvdata, idx %in% 1)
+# testset <- subset(crxvdata, idx %in% 2)
+# # half data for the propensity tree
+# fit1 = rpart(treatment.status ~ modelVar + coord1 + coord2, method="class", data=crxvdata)
+# #prp(fit1)
+# id = c(1:dim(fit1$frame)[1])
+# leafs = id[which(as.character(fit1$frame$var) == "<leaf>")]
+# 
+# # half for estimation
+# fit = as.party(fit1)
+# #Dan added spdf@data here - it's wrong, but testing.
+# testset = spdf@data
+# node_id =  predict(fit,testset,type="node")
+# res = 0
+# 
+# res = rep(0,length(leafs))
+# id = c(1:dim(testset)[1])
+# 
+# for(i in 1:length(leafs)){
+#   leaf = leafs[i]
+#   nodes = id[node_id==leaf]
+#   df = testset[nodes,]
+#   trtcount = length(df$trueOutcome[df$treatment.status==1])
+#   untrtcount = length(df$trueOutcome[df$treatment.status==0])
+#   treated = sum(df$trueOutcome[df$treatment.status==1])
+#   untreated = sum(df$trueOutcome[df$treatment.status==0])
+#   res[i] = treated/trtcount - untreated/untrtcount
+# }
+# 
+# treatment.predictions@data$propensity.tree = unlist(lapply(as.numeric(node_id),function(x) res[match(x,leafs)]))
 
 
 
@@ -577,20 +578,30 @@ results["ct_split_count"][p,] <- length(unique(fit_ctpred$where))
 
 
 #Compare Maps
-# map_trt <- treatment.predictions[names(treatment.predictions) != "trueSpill"]
-# map_trt <- map_trt[names(map_trt) != "spatial.trueThreshold"]
-# map_trt <- map_trt[names(map_trt) != "spatial.matchit.spill"]
-# map_trt <- map_trt[names(map_trt) != "baseline"]
-# map_trt <- map_trt[names(map_trt) != "baseline.matchit"]
-# map_trt <- map_trt[names(map_trt) != "treatment.status"]
+ map_trt <- treatment.predictions[names(treatment.predictions) != "tot.spill"]
+ map_trt <- map_trt[names(map_trt) != "spatial.trueThreshold"]
+ map_trt <- map_trt[names(map_trt) != "spatial.matchit.spill"]
+ map_trt <- map_trt[names(map_trt) != "baseline"]
+ map_trt <- map_trt[names(map_trt) != "baseline.matchit"]
+ #map_trt <- map_trt[names(map_trt) != "treatment.status"]
+ map_trt <- map_trt[names(map_trt) != "ct.spill"]
+ #map_trt <- map_trt[names(map_trt) != "trueSpill"]
+ #map_trt <- map_trt[names(map_trt) != "id"]
 # 
 # 
-# pal = brewer.pal(10,"Greens")
-# brks = c(0.0,1,1.25,1.5,1.75,2.0,2.5,3.0,3.5,100)
-# spplot(map_trt, zcol=names(map_trt)[names(map_trt) != "id"],cuts=brks,col.regions=pal, col="transparent",
-#        main = list(label="Treatment Estimates"), legendEntries=c("0-.25",".25-.5",".5-.75",".75-1","1-1.25","1.25-1.5","1.5-1.75","1.75-2.0","2.0+"), cex=0.5)
+names(map_trt)
+ 
+ pal = brewer.pal(9,"Greens")
+ brks = c(0.0,0.25,.5,0.75,1.0,1.25,1.5,100)
+map_out_path <- paste(map_out, "spill_mag", spill.magnitude, ".png", sep="")
+title.v <- paste("Mag:",spill.magnitude," Treat Range:",spill.vrange, sep="")
+png(filename=map_out_path)
+spplot(map_trt, zcol=names(map_trt)[names(map_trt) != "id"],cuts=brks,col.regions=pal, col="transparent",
+       main = list(label=title.v), cex=0.5)
 
+ dev.off()
 
+ 
 #print("Iteration Complete")
 
 
