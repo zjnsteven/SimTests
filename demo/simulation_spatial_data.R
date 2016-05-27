@@ -31,7 +31,7 @@ spdf <- spTransform(spdf, CRS(prj))
 # Define the spatial correlation of the x-variable
 var.g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
                      model=vgm(psill=xvar_psill, model="Sph", var1.vrange),
-                     nmax=20)
+                     nmax=100)
 
 # make simulations based on the gstat object
 var.sim <- predict(var.g.dummy, newdata=spdf, nsim=1)
@@ -46,8 +46,7 @@ spdf@data$trueVar <- var.sim$sim1
 
 # Define the spatial correlation of the x-variable
 var.error.g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
-                           model=vgm(psill=xvar_error_psill, model="Sph", var1_error.vrange),
-                           nmax=20)
+                           model=vgm(psill=xvar_error_psill, model="Sph", var1_error.vrange),nmax=100)
 
 # make simulations based on the gstat object
 var.error.sim <- predict(var.error.g.dummy, newdata=spdf, nsim=1)
@@ -63,8 +62,7 @@ spdf@data$modelVar <- (var.error.sim$sim1 * (1-prop_acc)) + var.sim$sim1
 
 # Define the spatial correlation of the x-variable
 mod.error.g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
-                           model=vgm(psill=mod_error_psill, model="Sph", mod_error.vrange),
-                           nmax=20)
+                           model=vgm(psill=mod_error_psill, model="Sph", mod_error.vrange), nmax=100)
 
 # make simulations based on the gstat object
 mod.error.sim <- predict(mod.error.g.dummy, newdata=spdf, nsim=1)
@@ -76,7 +74,7 @@ spdf@data$modelError <- mod.error.sim$sim1 * mod_error.magnitude
 #Generating the Treatment Variable
 # -----------------------------------------------------------------------------
 
-temp_rand <- spdf@data$trueVar + (runif(length(spdf@data$trueVar),0.0,0.5) * spdf@data$trueVar)
+temp_rand <- spdf@data$trueVar + (runif(length(spdf@data$trueVar),0.0,1.0) * spdf@data$trueVar)
 
 treatment.binary <- ifelse(temp_rand> quantile(temp_rand, 
                                                         (1-trt_prc)), 1, 0)
@@ -91,58 +89,60 @@ spdf$treatment.status = treatment.binary
 # -----------------------------------------------------------------------------
 
 # Define the spatial spillover variogram
-trt.spillover <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
-                       model=vgm(psill=trt_spill_sill, model="Sph", spill.vrange),
-                       nmax=20)
-trt.spillover.sim <- predict(trt.spillover, newdata=spdf, nsim=1)
-vgm.spillover <- variogram(sim1~1, trt.spillover.sim, covariogram=TRUE)
+#trt.spillover <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
+#                       model=vgm(psill=trt_spill_sill, model="Sph", spill.vrange), nmax=100)
+#trt.spillover.sim <- predict(trt.spillover, newdata=spdf, nsim=1)
+#vgm.spillover <- variogram(sim1~1, trt.spillover.sim, covariogram=TRUE)
 
 
-vgm.polynomial <- lm(gamma ~ poly(dist, degree=5, raw=TRUE),
-                     data=vgm.spillover)
+#vgm.polynomial <- lm(gamma ~ poly(dist, degree=3, raw=TRUE),
+#                     data=vgm.spillover)
 
-vgm.spillover$fit <- predict(vgm.polynomial, vgm.spillover)
+#vgm.spillover$fit <- predict(vgm.polynomial, vgm.spillover)
 
-print(summary(vgm.polynomial))
-print(summary(vgm.spillover$fit))
+#print(summary(vgm.polynomial))
+#print(summary(vgm.spillover$fit))
 
 
 #Calculate the distance to treated units for each unit (excluding itself)
-tmp.spillover.weights <- c()
+spdf@data$tmp.spillover.weights <- NA
 for (i in 1:nrandom) {
   
-  tmp.dist <- spDists(spdf[i, ]@coords, spdf@coords, longlat=TRUE)
+  dist <- spDists(spdf[i, ]@coords, spdf@coords, longlat=TRUE)[1,]
   
   
-  tmp.neighbors <- tmp.dist > 0
-  tmp.treated <- spdf$treatment.status
-  
-  tmp.newdata <- data.frame(
-    dist = c(tmp.dist)
-  )
-  
+  neighbors <- dist > 0
+
   #Limit to the min (after the final predicted distance all values are 0)
-  tmp.newdata$gamma <- predict(vgm.polynomial, newdata=tmp.newdata)
-  tmp.newdata$gamma[tmp.newdata$gamma < 0] <- 0
-  tmp.newdata$gamma <- 1/tmp.newdata$gamma
-  tmp.newdata$gamma[is.infinite(tmp.newdata$gamma)] <- 0#max(tmp.newdata$gamma[!is.infinite(tmp.newdata$gamma)])
-  tmp.spillover.weights[i] <- sum(tmp.newdata$gamma * tmp.neighbors * tmp.treated)
-  
-}
+  gamma <- trt_spill_sill - (trt_spill_sill * (((3/2)*((dist)/spill.vrange)) - 
+                                                 ((1/2) * (dist)/spill.vrange)^3))
+  #spdf@data$gamma <- predict(vgm.polynomial, newdata=t)
+  gamma[gamma < 0] <- 0
+  neighbors[dist > spill.vrange] <- 0
+  #tmp.newdata$gamma <- 1/tmp.newdata$gamma
+  #tmp.newdata$gamma[is.infinite(tmp.newdata$gamma)] <- 0#max(tmp.newdata$gamma[!is.infinite(tmp.newdata$gamma)])
+  spdf@data$tmp.spillover.weights[i] <- sum(gamma * neighbors * spdf@data$treatment.status)
+  spdf@data$dist_avg[i] <- mean(dist)
+  spdf@data$neighbors <- sum(neighbors)
+  }
+print(head(spdf@data))
 
-vgm.spillover$gamma[vgm.spillover$gamma < 0] <- 0
+spdf@data$tmp.spillover.weights[is.na(spdf@data$tmp.spillover.weights)] <- 0
+#vgm.spillover$gamma[vgm.spillover$gamma < 0] <- 0
+print("tmp.spillover")
+print(summary(spdf@data$tmp.spillover.weights))
 
-tmp.spillover.weights[is.na(tmp.spillover.weights)] <- 0
+
 
 #Total treated effect across the study area
 tmp.spillover.t1 <- sum(theta * spdf$treatment.status)
 
 #Ratio of spillover to assign to each unit
 tmp.spillover.t2 <- c()
-sum.spillover.weights <- sum(tmp.spillover.weights, na.rm=TRUE)
+sum.spillover.weights <- sum(spdf@data$tmp.spillover.weights, na.rm=TRUE)
 for (i in 1:nrandom) {
-  tmp.spillover.t2[i] <- (tmp.spillover.weights[i] / sum.spillover.weights)
-  if(is.na(tmp.spillover.t2[i])){
+  spdf@data$tmp.spillover.t2[i] <- (spdf@data$tmp.spillover.weights[i] / sum.spillover.weights)
+  if(is.na(spdf@data$tmp.spillover.t2[i])){
     tmp.spillover.t2[i] = 0
   }
 }
@@ -151,9 +151,9 @@ for (i in 1:nrandom) {
 tot_spill <- tmp.spillover.t1 * spill.magnitude
 print("Tot spill")
 print(tot_spill)
-print(summary(tmp.spillover.t2))
+print(summary(spdf@data$tmp.spillover.t2))
 #Calculate per-unit spillover
-spdf$trueSpill <-tmp.spillover.t2 * tot_spill
+spdf$trueSpill <-spdf@data$tmp.spillover.t2 * tot_spill
 
 print(summary(spdf$trueSpill))
 
@@ -164,6 +164,10 @@ print(summary(spdf$trueOutcome))
 print(summary(spdf$treatment.status))
 
 spdf$modelOutcome <- spdf$trueOutcome + spdf$modelError
+
+back_df.2 <- spdf@data[,names(spdf@data) %in% c("tmp.spillover.weights", "tmp.spillover.t2", "dist_avg", "neighbors")]
+spdf@data <- spdf@data[,!names(spdf@data) %in% c("tmp.spillover.weights", "tmp.spillover.t2", "dist_avg", "neighbors")]
+
 
 
 

@@ -1,6 +1,7 @@
 from mpi4py import MPI
 from subprocess import Popen, PIPE, STDOUT, call, check_output, CalledProcessError
 import random
+import time
 
 comm = MPI.COMM_WORLD
 
@@ -10,31 +11,33 @@ name = MPI.Get_processor_name()
 
 sim_path = '/sciclone/home00/geogdan/SimTests/demo/pySims.R'
 
-iterations = 1000
+iterations = 10000
 c = rank
 nonfit_cnt = 0
+version = str(round(time.time(),0))
+
 while c < iterations:
     print "Worker - rank %d on %s."%(rank, name) 
     out_path = '/sciclone/home00/geogdan/BetaThree/sim_'+str(c)+'.csv'
 
-    version = "1"
-    nrandom = "10000"#str(100 + random.random()*10000)
+
+    nrandom = "5000"#str(100 + random.random()*10000)
     xvar_psill = "1.0"#str(0.1 + random.random()*0.9)
     minx = "-45.0"
     maxx = "45.0"
     miny = "-22.5"
     maxy = "22.5"
 
-    var1_vrange = str(0.5 + random.random()*100000)
+    var1_vrange = str(100 + random.random()*1000)
     var1_error = "0.1"#str(0.1 + random.random()*2)
     prop_acc = str(0.1 + random.random()*.89)
     var1_error_vrange = "0.1"#str(0.1 + random.random()*2)
     mod_error_magnitude = "0"#str(0.1 + random.random()*2)
-    trt_prc = str(0.1 + random.random() * 0.3)
+    trt_prc = str(0.1 + random.random() * 0.4)
     theta = "1.0"
     beta = str(0.2 + random.random()*5)
-    spill_vrange = str(0.5 + random.random()*100000)
-    spill_magnitude= str(0.01 + random.random()*2)
+    spill_vrange = str(100 + random.random()*1000)
+    spill_magnitude= str(0.1 + random.random()*1.0)
     cal= str(0.25 + random.random()*1.75)
     sample_size = "0.5"#str(0.1 + random.random()*0.9)
     tree_split_lim= str(0.05 + random.random()*0.1)

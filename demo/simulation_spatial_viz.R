@@ -97,7 +97,7 @@ viz.list=c("nrandom","beta", "ct_split_count", "prop_acc", "tree_split_lim", "ca
 
 for(type in viz.list)
 {
-fname = paste("/home/dan/Desktop/SimViz/",type,"_",length(files),".png",sep="")
+fname = paste("/home/aiddata/Desktop/SimViz/",type,"_",length(files),".png",sep="")
 CairoPNG(1600,900,file=fname, bg="white")
 title <- paste("ATE by Model", length(files), sep="")
 print(type)

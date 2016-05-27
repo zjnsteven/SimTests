@@ -1,3 +1,4 @@
+#Debugging
 rm(list=ls())
 library(sp)
 library(ncf)
@@ -14,13 +15,13 @@ library(partykit)
 
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp("/sciclone/home00/geogdan/SimTests/demo/splitc.cpp")
-CT_src <- "/sciclone/home00/geogdan/SimTests/demo/CT_functions.R"
-sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
-map_out <- "/sciclone/home00/geogdan/maps/"
+sourceCpp("/mnt/sc/SimTests/demo/splitc.cpp")
+CT_src <- "/mnt/sc/SimTests/demo/CT_functions.R"
+sim_src <- "/mnt/sc/SimTests/demo/simulation_spatial_data.R"
+map_out <- "/mnt/sc/maps_debug/"
 
 #detach("package:MatchIt", unload=TRUE)
-load_all("/sciclone/home00/geogdan/SimTests/R")
+load_all("/mnt/sc/SimTests/demo/")
 
 #1 3800.41856568 0.90376081592 -45.0 45.0 -22.5 22.5 3.21749654825 0.250852506018 0.448021052911 4.27592030555 0.0684864449219 0.29100048171 1 0.330411927736 3.83573033709 1.88067542642 0.698254286741 0.437623061042 10 2.58494466138 /sciclone/home00/geogdan/AlphaSims/test_0.csv 0.954552979835 0.539550663469 0.164665770447
 Args <- commandArgs(trailingOnly = TRUE)
@@ -28,7 +29,11 @@ Args <- commandArgs(trailingOnly = TRUE)
 if(length(Args) == 0)
 {
   #Exception for running the script directly without a call.
-Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "50000", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "50000", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/may_a/test_0.csv", "0.954552979835", "0.539550663469", "50000")
+  #test:
+  Args <- c("1", "5000", "1", "-45.0", "45.0", "-22.5", "22.5", "42809", "0.1", "0.475", "0.1", "0.0", "0.299", "1", "0.81533", "2500", "4.137", "0.3495", "0.5", "0.14", "0.1", "/mnt/sc/maps_debug/test_0.csv", "0.1", "0.1", "1.0")
+  
+  #works:
+  #Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "50000", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "50000", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/mnt/sc/maps_debug/test_0.csv", "0.954552979835", "0.539550663469", "50000")
 }
 
 print(Args)
@@ -254,13 +259,13 @@ lower_lim <-  mean(p_cor_spdf@data$m1.pscore) - (sd(p_cor_spdf@data$m1.pscore, n
 
 trans_dta <- p_cor_spdf
 
-#trans_dta <- trans_dta[trans_dta@data$m1.pscore < upper_lim,]
-#trans_dta <- trans_dta[trans_dta@data$m1.pscore > lower_lim,]
+trans_dta <- trans_dta[trans_dta@data$m1.pscore < upper_lim,]
+trans_dta <- trans_dta[trans_dta@data$m1.pscore > lower_lim,]
 
 trans_dta <- trans_dta[(trans_dta@data$m1.pscore != 0 &
                           trans_dta@data$m1.pscore != 1),]
 
-  
+
 
 
 
@@ -278,7 +283,7 @@ for(i in 1:nrow(trans_dta))
   {
     #Untreated
     transOutcome[i] = -1 * (trans_dta@data$modelOutcome[i] * 
-      ((1-0) / (1 - trans_dta@data$m1.pscore[i])))
+                              ((1-0) / (1 - trans_dta@data$m1.pscore[i])))
   }
 }
 trans_dta@data$transOutcome <- unlist(transOutcome)
@@ -343,7 +348,7 @@ res_leaf2prune = res3[-1]
 #Total Outcome
 
 
-treatment.predictions@data$tot.spill <-  res * treatment.predictions$treatment.status
+treatment.predictions@data$tot.spill <-  res
 
 
 
@@ -463,7 +468,7 @@ print(fit_ctpred$frame)
 
 #Total Outcome - CT
 
-treatment.predictions@data$ct.spill <-  predict(fit_ctpred,newdata=spdf@data) * treatment.predictions$treatment.status
+treatment.predictions@data$ct.spill <-  predict(fit_ctpred,newdata=spdf@data)
 #print("CT Nodes:")
 #print(length(unique(fit_ctpred$where)))
 
@@ -519,8 +524,8 @@ for(i in 4:length(treatment.predictions@data))
     results[names(treatment.predictions@data)[i]] <- NA
     results["trueTreatment"] <- NA
   }
-  results[names(treatment.predictions@data)[i]][p,] <- sum(treatment.predictions@data[,i] * treatment.predictions$treatment.status,na.rm=T) / sum(treatment.predictions$treatment.status)
-  results["trueTreatment"][p,] <- sum(treatment.predictions@data$trueTreatment * treatment.predictions$treatment.status) / sum(treatment.predictions$treatment.status)
+  results[names(treatment.predictions@data)[i]][p,] <- sum(treatment.predictions@data[,i],na.rm=T) / (nrandom*trt_prc)
+  results["trueTreatment"][p,] <- sum(treatment.predictions@data$trueTreatment) / (nrandom*trt_prc)
 }
 
 
@@ -576,30 +581,30 @@ results["ct_split_count"][p,] <- length(unique(fit_ctpred$where))
 
 
 #Compare Maps
- map_trt <- treatment.predictions[names(treatment.predictions) != "tot.spill"]
- map_trt <- map_trt[names(map_trt) != "spatial.trueThreshold"]
- map_trt <- map_trt[names(map_trt) != "spatial.matchit.spill"]
- map_trt <- map_trt[names(map_trt) != "baseline"]
- map_trt <- map_trt[names(map_trt) != "baseline.matchit"]
- #map_trt <- map_trt[names(map_trt) != "treatment.status"]
- map_trt <- map_trt[names(map_trt) != "ct.spill"]
- #map_trt <- map_trt[names(map_trt) != "trueSpill"]
- #map_trt <- map_trt[names(map_trt) != "id"]
+map_trt <- treatment.predictions[names(treatment.predictions) != "tot.spill"]
+map_trt <- map_trt[names(map_trt) != "spatial.trueThreshold"]
+map_trt <- map_trt[names(map_trt) != "spatial.matchit.spill"]
+map_trt <- map_trt[names(map_trt) != "baseline"]
+map_trt <- map_trt[names(map_trt) != "baseline.matchit"]
+#map_trt <- map_trt[names(map_trt) != "treatment.status"]
+map_trt <- map_trt[names(map_trt) != "ct.spill"]
+#map_trt <- map_trt[names(map_trt) != "trueSpill"]
+#map_trt <- map_trt[names(map_trt) != "id"]
 # 
 # 
 names(map_trt)
- 
- pal = brewer.pal(9,"Greens")
- brks = c(0.0,0.25,.5,0.75,1.0,1.25,1.5,100)
+
+pal = brewer.pal(9,"Greens")
+brks = c(0.0,0.25,.5,0.75,1.0,1.25,1.5,100)
 map_out_path <- paste(map_out, "vsm",version, "_", spill.magnitude, ".png", sep="")
 title.v <- paste("Mag:",spill.magnitude," Treat Range:",spill.vrange," RunID:", version, sep="")
 png(filename=map_out_path)
 print(spplot(map_trt, zcol=names(map_trt)[names(map_trt) != "id"],cuts=brks,col.regions=pal, col="transparent",
-       main = list(label=title.v), cex=0.5))
+             main = list(label=title.v), cex=0.5))
 
- dev.off()
+dev.off()
 
- 
+
 #print("Iteration Complete")
 
 
