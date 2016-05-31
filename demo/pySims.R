@@ -17,7 +17,7 @@ Sys.setenv("PKG_LIBS"="-fopenmp")
 sourceCpp("/sciclone/home00/geogdan/SimTests/demo/splitc.cpp")
 CT_src <- "/sciclone/home00/geogdan/SimTests/demo/CT_functions.R"
 sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
-map_out <- "/sciclone/home00/geogdan/maps/"
+map_out <- "/sciclone/home00/geogdan/M2/"
 
 #detach("package:MatchIt", unload=TRUE)
 load_all("/sciclone/home00/geogdan/SimTests/R")
@@ -62,7 +62,7 @@ spill.vrange = as.numeric(Args[16])
 spill.magnitude= as.numeric(Args[17])
 cal= as.numeric(Args[18])
 sample_size = as.numeric(Args[19])
-tree_split_lim= round(as.numeric(Args[20])*(nrandom * sample_size),0) 
+tree_split_lim = 5 
 mod_error.vrange= as.numeric(Args[21])
 xvar_psill=as.numeric(Args[23])
 mod_error_psill=as.numeric(Args[24])
@@ -121,10 +121,10 @@ source(sim_src)
 # Save all Model Predictions into a SPDF for comparison.
 # -----------------------------------------------------------------------------
 outcome.predictions <- spdf
-outcome.predictions@data <- outcome.predictions@data[c(1,8)]
+outcome.predictions@data <- outcome.predictions@data[c(1,9)]
 
 treatment.predictions <- spdf
-treatment.predictions@data <- treatment.predictions@data[c(1,6,7)]
+treatment.predictions@data <- treatment.predictions@data[c(1,6,8)]
 treatment.predictions@data$trueTreatment <- (treatment.predictions$treatment.status * theta) + treatment.predictions$trueSpill
 
 
@@ -157,7 +157,7 @@ nospill.t.pred@data$baseline.matchit <- summary(baseline.model)$coefficients[2]
 
 #Cheating Spatial PSM - we give the accurate vrange, and use it as a threshold.
 spatial.opts <- list(decay.model = "threshold",
-                     threshold = (spill.vrange/1000/111.32))
+                     threshold = (spill.vrange/111.32))
 
 spatial.trueThreshold <- matchit(treatment.status ~ modelVar, data= model_dta,
                                  method = "nearest", distance = "logit",
@@ -247,20 +247,26 @@ p_cor_spdf@data["coord2"] <- coordinates(p_cor_spdf)[,2]
 #p.score <- lm(treatment.status ~ 0 + modelVar, data=model_dta@data)
 #p_cor_spdf@data$m1.pscore <- predict(p.score, newdata=p_cor_spdf@data)
 
+
+
+trans_dta <- p_cor_spdf
+
+#Create a pscore using the rpart
+pscore.Calc <- matchit(treatment.status ~ modelVar + coord1 + coord2 + trans_dist, data= trans_dta@data,
+                            method="nearest", distance="logit")
+                            
+
+trans_dta@data$m1.pscore = pscore.Calc$distance 
 #Simple caliper for testing
 upper_lim <- (sd(p_cor_spdf@data$m1.pscore, na.rm=TRUE) * cal) + mean(p_cor_spdf@data$m1.pscore)
 lower_lim <-  mean(p_cor_spdf@data$m1.pscore) - (sd(p_cor_spdf@data$m1.pscore, na.rm=TRUE) * cal) 
 
-
-trans_dta <- p_cor_spdf
 
 #trans_dta <- trans_dta[trans_dta@data$m1.pscore < upper_lim,]
 #trans_dta <- trans_dta[trans_dta@data$m1.pscore > lower_lim,]
 
 trans_dta <- trans_dta[(trans_dta@data$m1.pscore != 0 &
                           trans_dta@data$m1.pscore != 1),]
-
-  
 
 
 
@@ -283,7 +289,7 @@ for(i in 1:nrow(trans_dta))
 }
 trans_dta@data$transOutcome <- unlist(transOutcome)
 
-tot.fit.spill <- rpart(transOutcome ~ modelVar + coord1 + coord2,
+tot.fit.spill <- rpart(transOutcome ~ modelVar + coord1 + coord2 +trans_dist,
                        data = trans_dta@data,
                        control=rpart.control(cp=0, minsplit=tree_split_lim),
                        method="anova")
@@ -364,7 +370,7 @@ n = dim(dbb)[1]
 crxvdata = dbb
 crxvdata$id <- sample(1:k, nrow(crxvdata), replace = TRUE)
 list = 1:k
-fit1 = rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
+fit1 = rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2 + trans_dist,
              crxvdata,
              control = rpart.control(cp = 0,minsplit = tree_split_lim),
              method=alist)
@@ -405,7 +411,7 @@ for(l in 1:length(alphacandidate)){
   for (i in 1:k){
     trainingset <- subset(crxvdata, id %in% list[-i])
     testset <- subset(crxvdata, id %in% c(i))
-    fit1 = rpart (cbind(modelOutcome,treatment.status,m1.pscore,transOutcome)  ~ modelVar + coord1 + coord2,
+    fit1 = rpart (cbind(modelOutcome,treatment.status,m1.pscore,transOutcome)  ~ modelVar + coord1 + coord2 +trans_dist,
                   trainingset,
                   control = rpart.control(cp = alpha,minsplit = tree_split_lim),
                   method=alist)
@@ -450,7 +456,7 @@ tsize = tsize[-1]
 alpha_res = alphacandidate[which.min(errset)]
 print(alpha_res)
 
-fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
+fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2 + trans_dist,
                     crxvdata, control=rpart.control(minsplit=tree_split_lim,cp=alpha_res),
                     method=alist)
 #prp(fit_ctpred)

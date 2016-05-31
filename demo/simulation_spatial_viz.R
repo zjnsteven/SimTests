@@ -1,7 +1,7 @@
 #Folder that contains CSVs to be visualized
 rm()
 library(Cairo)
-res_folder <- "/mnt/sc/BetaThree"
+res_folder <- "/mnt/sc/B"
 files <- list.files(path=res_folder, full.names=T, recursive=FALSE, pattern="\\.csv$")
 
 files <- files[-grep("dta",files)]
@@ -27,8 +27,8 @@ library(plotly)
 viz.sims <- function(results, varH, mtitle, pre="")
 {
   results.plot <- results
-  alpha.set = 0.01
-  cex.set = 0.1
+  alpha.set = 0.1
+  cex.set = 0.5
   
   
   eval(parse(text=paste("results.plot$v1 <- results.plot$",varH,sep="")))
@@ -105,6 +105,9 @@ print("__")
 viz.sims(results, type, title)
 dev.off()
 }
+
+hist(results$ct_split_count)
+
 
 
 # results2 <- results[results$mod_error.magnitude < .10,]

@@ -18,7 +18,7 @@ version = str(round(time.time(),0))
 
 while c < iterations:
     print "Worker - rank %d on %s."%(rank, name) 
-    out_path = '/sciclone/home00/geogdan/BetaThree/sim_'+str(c)+'.csv'
+    out_path = '/sciclone/home00/geogdan/B/sim_'+str(c)+'.csv'
 
 
     nrandom = "5000"#str(100 + random.random()*10000)
@@ -28,19 +28,19 @@ while c < iterations:
     miny = "-22.5"
     maxy = "22.5"
 
-    var1_vrange = str(100 + random.random()*1000)
+    var1_vrange = "1.0"#str(250 + random.random()*2500)
     var1_error = "0.1"#str(0.1 + random.random()*2)
-    prop_acc = str(0.1 + random.random()*.89)
+    prop_acc = "0.9"#str(0.1 + random.random()*.89)
     var1_error_vrange = "0.1"#str(0.1 + random.random()*2)
     mod_error_magnitude = "0"#str(0.1 + random.random()*2)
     trt_prc = str(0.1 + random.random() * 0.4)
     theta = "1.0"
-    beta = str(0.2 + random.random()*5)
-    spill_vrange = str(100 + random.random()*1000)
-    spill_magnitude= str(0.1 + random.random()*1.0)
+    beta = "1.0"#str(0.2 + random.random()*5)
+    spill_vrange = str(250 + random.random()*5000)
+    spill_magnitude= str(0.1 + random.random()*3.0)
     cal= str(0.25 + random.random()*1.75)
     sample_size = "0.5"#str(0.1 + random.random()*0.9)
-    tree_split_lim= str(0.05 + random.random()*0.1)
+    tree_split_lim= "5"#str(0.05 + random.random()*0.1)
     mod_error_vrange= "0.1"#str(0.1 + random.random()*2)
     xvar_error_psill ="0.1" #str(0.1 + random.random()*0.9)
     mod_error_psill ="0.1" #str(0.1 + random.random()*0.9)

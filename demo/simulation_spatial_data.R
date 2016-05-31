@@ -106,6 +106,7 @@ spdf$treatment.status = treatment.binary
 
 #Calculate the distance to treated units for each unit (excluding itself)
 spdf@data$tmp.spillover.weights <- NA
+spdf@data$trans_dist <- NA
 for (i in 1:nrandom) {
   
   dist <- spDists(spdf[i, ]@coords, spdf@coords, longlat=TRUE)[1,]
@@ -122,6 +123,9 @@ for (i in 1:nrandom) {
   #tmp.newdata$gamma <- 1/tmp.newdata$gamma
   #tmp.newdata$gamma[is.infinite(tmp.newdata$gamma)] <- 0#max(tmp.newdata$gamma[!is.infinite(tmp.newdata$gamma)])
   spdf@data$tmp.spillover.weights[i] <- sum(gamma * neighbors * spdf@data$treatment.status)
+  noZdist <- (dist * neighbors)
+  noZdist <- noZdist[noZdist != 0]
+  spdf@data$trans_dist[i] <- 1 / (((spdf@data$treatment.status[i]) * min(noZdist)) - ((1-spdf@data$treatment.status[i]) * min(noZdist)))
   spdf@data$dist_avg[i] <- mean(dist)
   spdf@data$neighbors <- sum(neighbors)
   }
