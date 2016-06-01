@@ -21,6 +21,36 @@ for c in range(0,size):
 			print "i:%d"%i
 			out_path = '/sciclone/home00/geogdan/OverlapC_TreeProp/sim_'+str(i)+'.csv'
 			version = "1"
+			""" Init set up for the simulation 
+			Parameters
+			----------
+			nrandom : 
+			xvar_psill : 
+			minx : 
+			miny :
+			maxy :
+			var1_vrange : 
+			var1_error :
+			prop_acc :
+			var1_error_vrange :
+			mod_error_magnitude :
+			trt_prc :
+			theta :
+			beta :
+			spill_vrange : 
+			spill_magnitude :
+			cal : 
+			sample_size : 
+			tree_split_lim : 
+			mod_error_vrange : 
+			xvar_error_psill :
+			mod_error_psill : 
+			trt_spill_sill : 
+			
+			Returns
+			-------
+			
+			"""
 			nrandom = "5000"#str(100 + random.random()*10000)
 			xvar_psill = ".1" #str(max(0.05,random.random()*1.0))
 			minx = "-45.0"
