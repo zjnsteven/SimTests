@@ -24,28 +24,45 @@ for c in range(0,size):
 			""" Init set up for the simulation 
 			Parameters
 			----------
-			nrandom : 
-			xvar_psill : 
-			minx : 
-			miny :
-			maxy :
-			var1_vrange : 
-			var1_error :
-			prop_acc :
-			var1_error_vrange :
-			mod_error_magnitude :
-			trt_prc :
-			theta :
-			beta :
-			spill_vrange : 
-			spill_magnitude :
-			cal : 
-			sample_size : 
-			tree_split_lim : 
-			mod_error_vrange : 
-			xvar_error_psill :
-			mod_error_psill : 
-			trt_spill_sill : 
+			nrandom : total numbers of points in the map
+			
+			xvar_psill : maximum amount of spatial covariation for covariates (spatial auotcorrealtion) 
+			
+			minx, maxx, miny, maxy : latitude and longitude bound
+			
+			var1_vrange : distance threshold for covariates
+			
+			var1_error : pecentage between 0 and 1, total error in the covarite 
+			
+			prop_acc : (1-prop_acc) is how much error added to the covarite 
+			
+			var1_error_vrange : the range of error for the covariate
+			
+			mod_error_magnitude : error coefficient 
+			
+			trt_prc : the pecentage of treated points
+			
+			theta : treatment coefficient
+			
+			beta : covariate coefficient
+			 
+			spill_vrange : distance of treatment effect   
+			
+			spill_magnitude : coefficient of spill_vrange
+			
+			cal : ecnon model 
+			
+			sample_size : data for prediction
+			
+			tree_split_lim : the minimum size of node to split
+			
+			mod_error_vrange : distance of cov error
+			
+			xvar_error_psill : maximum amount of spatial covariation for covariates for errors
+			
+			mod_error_psill : maximum amount of saptial cov error 
+			
+			trt_spill_sill : magnitude of treatment spillover
 			
 			Returns
 			-------
