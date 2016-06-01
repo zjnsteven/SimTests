@@ -1,7 +1,7 @@
 #Folder that contains CSVs to be visualized
 rm()
 library(Cairo)
-res_folder <- "/mnt/sc/B"
+res_folder <- "/mnt/sc/C"
 files <- list.files(path=res_folder, full.names=T, recursive=FALSE, pattern="\\.csv$")
 
 files <- files[-grep("dta",files)]
@@ -33,20 +33,20 @@ viz.sims <- function(results, varH, mtitle, pre="")
   
   eval(parse(text=paste("results.plot$v1 <- results.plot$",varH,sep="")))
   results.plot <- results.plot[order(results.plot$v1),]
-  ylower <- 0.0#min(results.plot[paste(pre,"ct.spill",sep="")]) - (2*abs(min(results.plot[paste(pre,"trueTreatment",sep="")])))
-  yupper <- 3.0#max(results.plot[paste(pre,"trueTreatment",sep="")]) 
+  ylower <- -1.0#min(results.plot[paste(pre,"ct.spill",sep="")]) - (2*abs(min(results.plot[paste(pre,"trueTreatment",sep="")])))
+  yupper <- 5.0#max(results.plot[paste(pre,"trueTreatment",sep="")]) 
   #if(mtitle == "ATE by Model")
   #{
   #  yupper <- max(results.plot[paste(pre,"propensity.tree",sep="")]) * 1.25
   #}
   plot(ylim=c(ylower,yupper), 
        results.plot$v1, 
-       results.plot[paste(pre,"baseline",sep="")][[1]], 
+       results.plot[paste(pre,"baseline.lm",sep="")][[1]], 
        col=rgb(1,0,0,alpha=alpha.set), pch=3, cex=cex.set,
        main=mtitle,
        ylab="Estimate",
        xlab=varH)
-  lines(lowess(results.plot$v1,results.plot[paste(pre,"baseline",sep="")][[1]]), col=rgb(1,0,0), pch=3)
+  lines(lowess(results.plot$v1,results.plot[paste(pre,"baseline.lm",sep="")][[1]]), col=rgb(1,0,0), pch=3)
   
   lines(lowess(results.plot$v1, 
                results.plot[paste(pre,"baseline.matchit",sep="")][[1]]), col=rgb(0,0,1), pch=4)
@@ -59,9 +59,9 @@ viz.sims <- function(results, varH, mtitle, pre="")
          results.plot[paste(pre,"trueTreatment",sep="")][[1]], col=rgb(0,1,0,alpha=alpha.set), pch=4, cex=cex.set)
   
   lines(lowess(results.plot$v1, 
-               results.plot[paste(pre,"ct.spill",sep="")][[1]]), col=rgb(1,0.5,0), pch=2)
+               results.plot[paste(pre,"ct.pred",sep="")][[1]]), col=rgb(1,0.5,0), pch=2)
   points(results.plot$v1, 
-         results.plot[paste(pre,"ct.spill",sep="")][[1]], col=rgb(1,0.5,0,alpha=alpha.set), pch=2, cex=cex.set)
+         results.plot[paste(pre,"ct.pred",sep="")][[1]], col=rgb(1,0.5,0,alpha=alpha.set), pch=2, cex=cex.set)
   
   #lines(lowess(results.plot$v1, 
   #             results.plot[paste(pre,"propensity.tree",sep="")][[1]]), col=rgb(0,1,1), pch=4)
@@ -69,17 +69,15 @@ viz.sims <- function(results, varH, mtitle, pre="")
   #              results.plot[paste(pre,"propensity.tree",sep="")][[1]], col=rgb(0,1,1,alpha=alpha.set), pch=4, cex=cex.set)
   
   lines(lowess(results.plot$v1, 
-               results.plot[paste(pre,"spatial.matchit.spill",sep="")][[1]]), col=rgb(0.5,0.5,0.5), pch=4)
+               results.plot[paste(pre,"spatialPSM",sep="")][[1]]), col=rgb(0.5,0.5,0.5), pch=4)
   points(results.plot$v1, 
-         results.plot[paste(pre,"spatial.matchit.spill",sep="")][[1]], col=rgb(0.5,0.5,0.5,alpha=alpha.set), pch=4, cex=cex.set)
+         results.plot[paste(pre,"spatialPSM",sep="")][[1]], col=rgb(0.5,0.5,0.5,alpha=alpha.set), pch=4, cex=cex.set)
   
-  if(mtitle == "ATE by Model")
-  {
-    lines(lowess(results.plot$v1, 
-                 results.plot[paste(pre,"tot.spill",sep="")][[1]]), col=rgb(0,0,0), pch=3)
-    points(results.plot$v1, 
-           results.plot[paste(pre,"tot.spill",sep="")][[1]], col=rgb(0,0,0,alpha=alpha.set), pch=3, cex=cex.set)
-  }
+  lines(lowess(results.plot$v1, 
+                 results.plot[paste(pre,"tot.pred",sep="")][[1]]), col=rgb(0,0,0), pch=3)
+  points(results.plot$v1, 
+           results.plot[paste(pre,"tot.pred",sep="")][[1]], col=rgb(0,0,0,alpha=alpha.set), pch=3, cex=cex.set)
+
   
   legend("topleft",
          cex = 0.65,
@@ -108,7 +106,10 @@ dev.off()
 
 hist(results$ct_split_count)
 
-
+allocs <- c(mean(results$baseline.lm_alloc), c(mean(results$spatialPSM_alloc)), c(mean(results$ct.pred_alloc)))
+quants <- c(mean(results$baseline.lm_quant), c(mean(results$spatialPSM_quant)), c(mean(results$ct.pred_quant)))
+barplot(allocs, main="Allocation Errors", col=c("red", "blue", "green"), legend=c("OLS", "Spatial PSM", "CT"))
+barplot(quants, main="Quantity Errors", col=c("red", "blue", "green"), legend=c("OLS", "Spatial PSM", "CT"))
 
 # results2 <- results[results$mod_error.magnitude < .10,]
 # fname = paste("/home/aiddata/Desktop/SimViz/spill.magnitude_lowError",length(files),".png",sep="")

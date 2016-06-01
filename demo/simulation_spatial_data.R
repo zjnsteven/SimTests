@@ -56,6 +56,7 @@ var.error.sim$sim1 <- var.error.sim$sim1  / max(var.error.sim$sim1)
 spdf@data$modelVarError <- var.error.sim$sim1* (1-prop_acc)
 spdf@data$modelVar <- (var.error.sim$sim1 * (1-prop_acc)) + var.sim$sim1
 
+
 # -----------------------------------------------------------------------------
 #Generating General Model Error Data
 # -----------------------------------------------------------------------------
@@ -66,7 +67,10 @@ mod.error.g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
 
 # make simulations based on the gstat object
 mod.error.sim <- predict(mod.error.g.dummy, newdata=spdf, nsim=1)
+if(max(mod.error.sim$sim1) > 0)
+{
 mod.error.sim$sim1 <- mod.error.sim$sim1 / max(mod.error.sim$sim1)
+}
 
 spdf@data$modelError <- mod.error.sim$sim1 * mod_error.magnitude
 
@@ -125,7 +129,7 @@ for (i in 1:nrandom) {
   spdf@data$tmp.spillover.weights[i] <- sum(gamma * neighbors * spdf@data$treatment.status)
   noZdist <- (dist * neighbors)
   noZdist <- noZdist[noZdist != 0]
-  spdf@data$trans_dist[i] <- 1 / (((spdf@data$treatment.status[i]) * min(noZdist)) - ((1-spdf@data$treatment.status[i]) * min(noZdist)))
+  spdf@data$trans_dist[i] <- 1 / (((spdf@data$treatment.status[i]) * min(noZdist))^3 - ((1-spdf@data$treatment.status[i]) * min(noZdist))^3)
   spdf@data$dist_avg[i] <- mean(dist)
   spdf@data$neighbors <- sum(neighbors)
   }

@@ -17,7 +17,7 @@ Sys.setenv("PKG_LIBS"="-fopenmp")
 sourceCpp("/sciclone/home00/geogdan/SimTests/demo/splitc.cpp")
 CT_src <- "/sciclone/home00/geogdan/SimTests/demo/CT_functions.R"
 sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
-map_out <- "/sciclone/home00/geogdan/M2/"
+map_out <- "/sciclone/home00/geogdan/M3/"
 
 #detach("package:MatchIt", unload=TRUE)
 load_all("/sciclone/home00/geogdan/SimTests/R")
@@ -525,7 +525,10 @@ for(i in 4:length(treatment.predictions@data))
     results[names(treatment.predictions@data)[i]] <- NA
     results["trueTreatment"] <- NA
   }
-  results[names(treatment.predictions@data)[i]][p,] <- sum(treatment.predictions@data[,i] * treatment.predictions$treatment.status,na.rm=T) / sum(treatment.predictions$treatment.status)
+  results[names(treatment.predictions@data)[i]][p,] <- sum(abs(treatment.predictions@data[,i] * 
+                                                                 treatment.predictions$treatment.status) - 
+                                                             (treatment.predictions@data$trueTreatment * 
+                                                                treatment.predictions$treatment.status))
   results["trueTreatment"][p,] <- sum(treatment.predictions@data$trueTreatment * treatment.predictions$treatment.status) / sum(treatment.predictions$treatment.status)
 }
 
@@ -588,15 +591,19 @@ results["ct_split_count"][p,] <- length(unique(fit_ctpred$where))
  map_trt <- map_trt[names(map_trt) != "baseline"]
  map_trt <- map_trt[names(map_trt) != "baseline.matchit"]
  #map_trt <- map_trt[names(map_trt) != "treatment.status"]
- map_trt <- map_trt[names(map_trt) != "ct.spill"]
+ #map_trt <- map_trt[names(map_trt) != "ct.spill"]
  #map_trt <- map_trt[names(map_trt) != "trueSpill"]
  #map_trt <- map_trt[names(map_trt) != "id"]
 # 
 # 
+ map_trt@data$trueTreatment <- map_trt@data$trueTreatment * map_trt@data$treatment.status
+ map_trt@data$ct <- map_trt@data$ct.spill * map_trt@data$treatment.status
 names(map_trt)
  
+map_trt <- map_trt[names(map_trt) != "ct.spill"]
+
  pal = brewer.pal(9,"Greens")
- brks = c(0.0,0.25,.5,0.75,1.0,1.25,1.5,100)
+ brks = c(0.0,1.0,1.25,1.5,1.75,2.0,2.5,100)
 map_out_path <- paste(map_out, "vsm",version, "_", spill.magnitude, ".png", sep="")
 title.v <- paste("Mag:",spill.magnitude," Treat Range:",spill.vrange," RunID:", version, sep="")
 png(filename=map_out_path)
