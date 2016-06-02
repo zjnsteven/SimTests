@@ -18,7 +18,7 @@ version = "12b"
 
 while c < iterations:
     print "Worker - rank %d on %s."%(rank, name) 
-    out_path = '/sciclone/home00/geogdan/C/sim_'+str(c)+'.csv'
+    out_path = '/sciclone/home00/geogdan/D/sim_'+str(c)+'.csv'
 
 
     nrandom = "5000"#str(100 + random.random()*10000)

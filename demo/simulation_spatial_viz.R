@@ -1,7 +1,7 @@
 #Folder that contains CSVs to be visualized
 rm()
 library(Cairo)
-res_folder <- "/mnt/sc/C"
+res_folder <- "/mnt/sc/D"
 files <- list.files(path=res_folder, full.names=T, recursive=FALSE, pattern="\\.csv$")
 
 files <- files[-grep("dta",files)]
@@ -104,113 +104,22 @@ viz.sims(results, type, title)
 dev.off()
 }
 
+dev.off()
 hist(results$ct_split_count)
 
-allocs <- c(mean(results$baseline.lm_alloc), c(mean(results$spatialPSM_alloc)), c(mean(results$ct.pred_alloc)))
-quants <- c(mean(results$baseline.lm_quant), c(mean(results$spatialPSM_quant)), c(mean(results$ct.pred_quant)))
-barplot(allocs, main="Allocation Errors", col=c("red", "blue", "green"), legend=c("OLS", "Spatial PSM", "CT"))
-barplot(quants, main="Quantity Errors", col=c("red", "blue", "green"), legend=c("OLS", "Spatial PSM", "CT"))
-
-# results2 <- results[results$mod_error.magnitude < .10,]
-# fname = paste("/home/aiddata/Desktop/SimViz/spill.magnitude_lowError",length(files),".png",sep="")
-# CairoPNG(1600,900,file=fname, bg="white")
-# title <- paste("ATE by Model - Model Error < 0.1 - Sim ", length(files), sep="")
-# viz.sims(results2, "spill.magnitude", title)
-# dev.off()
-# 
-# results3 <- results[results$spill.magnitude < .10,]
-# fname = paste("/home/aiddata/Desktop/SimViz/beta.lowSpill",length(files),".png",sep="")
-# CairoPNG(1600,900,file=fname, bg="white")
-# title <- paste("ATE by Model - Spillover < 0.1 - Sim ", length(files), sep="")
-# viz.sims(results3, "beta", title)
-# dev.off()
-
-#viz.sims(results, "var1.vrange", "ATE by Model")
-#viz.sims(results, "prop_acc", "ATE by Model")
-#viz.sims(results, "spill.vrange", "ATE by Model")
-#viz.sims(results, "caliper", "ATE by Model")
-#viz.sims(results, "sample_size", "ATE by Model")
-#viz.sims(results, "mod_error.magnitude", "ATE by Model")
-#viz.sims(results, "tree_split_lim", "ATE by Model")
-
-#viz.sims(results_out, "spill.magnitude", "Predicted Avg. Outcome")
-#viz.sims(results_out, "var1.vrange", "Predicted Avg. Outcome")
-#viz.sims(results_out, "psill", "Predicted Avg. Outcome")
-#viz.sims(results_out, "prop_acc", "Predicted Avg. Outcome")
-#viz.sims(results_out, "spill.vrange", "Predicted Avg. Outcome")
-#viz.sims(results_out, "caliper", "Predicted Avg. Outcome")
-
-#viz.sims(results_nospill, "spill.magnitude", "Predicted Theta")
-#viz.sims(results_nospill, "var1.vrange", "Predicted Theta") #5
-#viz.sims(results_nospill, "psill", "Predicted Theta") #200
-#viz.sims(results_nospill, "prop_acc", "Predicted Theta") #0.95
-#viz.sims(results_nospill, "spill.vrange", "Predicted Theta") #1.0
-#viz.sims(results_nospill, "caliper", "Predicted Theta")
-#viz.sims(results_nospill, "theta", "Predicted Theta") #1.0
+allocs <- cbind(results$baseline.lm_alloc, results$spatialPSM_alloc, results$ct.pred_alloc, results$baseline.matchit_alloc, results$gwr_alloc)
+quants <- cbind(results$baseline.lm_quant, results$spatialPSM_quant, results$ct.pred_quant, results$baseline.matchit_quant, results$gwr_quant)
+tots <- cbind(results$baseline.lm_tot, results$spatialPSM_tot, results$ct.pred_tot, results$baseline.matchit_tot, results$gwr_tot)
 
 
-#Compare to Truth
-# dif_func <- function(results, comparison)
-# {
-#   results.dif <- results
-#   abs.comp <- paste("results.dif$dif.abs.", comparison, 
-#                     "<- abs(results.dif$trueTreatment - results.dif$",
-#                     comparison,")", sep="")
-#   rel.comp <- paste("results.dif$dif.", comparison, 
-#                     "<- (results.dif$trueTreatment - results.dif$",
-#                     comparison,")", sep="")
-#   eval(parse(text=abs.comp))
-#   eval(parse(text=rel.comp))
-#   return(results.dif)
-#   
-# }
-# 
-# results <- dif_func(results, "baseline")
-# results <- dif_func(results, "baseline.matchit")
-# results <- dif_func(results, "spatial.matchit.spill")
-# results <- dif_func(results, "spatial.trueThreshold")
-# results <- dif_func(results, "trueTreatment")
-# results <- dif_func(results, "tot.spill")
-# results <- dif_func(results, "ct.spill")
+par(xpd=TRUE)
 
+boxplot(allocs, use.cols=TRUE, col=c("red", "blue", "green", "yellow", "orange"), xaxt="n", main="Allocation Error")
+legend("bottom",c("OLS", "Spatial PSM", "CT", "PSM", "GWR"), fill=c("red", "blue", "green", "yellow"), inset=-0.25)
 
+boxplot(quants, use.cols=TRUE, col=c("red", "blue", "green", "yellow", "orange"), xaxt="n", main="Quantity Error")
+legend("bottom",c("OLS", "Spatial PSM", "CT","PSM", "GWR"), fill=c("red", "blue", "green", "yellow", "orange"), inset=-0.25)
 
-#viz.sims(results, "spill.magnitude", "Abs Dif ATE by Model", "dif.abs.")
-#viz.sims(results, "var1.vrange", "Abs Dif ATE by Model", "dif.abs.")
-#viz.sims(results, "prop_acc", "Abs Dif ATE by Model", "dif.abs.")
-#viz.sims(results, "spill.vrange", "Abs Dif ATE by Model", "dif.abs.")
-#viz.sims(results, "caliper", "Abs Dif ATE by Model", "dif.abs.")
-#viz.sims(results, "sample_size", "Abs Dif ATE by Model", "dif.abs.")
+boxplot(tots, use.cols=TRUE, col=c("red", "blue", "green", "yellow"), xaxt="n", main="Total Error")
+legend("bottom",c("OLS", "Spatial PSM", "CT","PSM", "GWR"), fill=c("red", "blue", "green", "yellow"), inset=-0.25)
 
-#viz.sims(results, "spill.magnitude", "ATE by Model", "dif.")
-#viz.sims(results, "var1.vrange", "ATE by Model", "dif.")
-#viz.sims(results, "psill", "ATE by Model", "dif.")
-#viz.sims(results, "prop_acc", "ATE by Model", "dif.")
-#viz.sims(results, "spill.vrange", "ATE by Model", "dif.")
-#viz.sims(results, "caliper", "ATE by Model", "dif.")
-
-
-
-# plot_ly(results, x=spill.magnitude, y=spill.vrange, 
-#         z=baseline, type="scatter3d", mode="markers", opacity=0.5, name="Baseline")
-# 
-# add_trace(results, x=spill.magnitude, y=spill.vrange, 
-#           z=spatial.trueThreshold, 
-#           type="scatter3d",
-#           mode="markers",
-#           opacity=0.5, 
-#           name="Spatial Threshold")
-# 
-# add_trace(results, x=spill.magnitude, y=spill.vrange, 
-#           z=trueTreatment, 
-#           type="scatter3d",
-#           mode="markers",
-#           opacity=0.5, 
-#           name="True (0 Surface)")
-# 
-# add_trace(results, x=spill.magnitude, y=spill.vrange, 
-#           z=spatial.matchit.spill, 
-#           type="scatter3d",
-#           mode="markers",
-#           opacity=0.5, 
-#           name="Spatial Spill")

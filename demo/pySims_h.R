@@ -18,10 +18,11 @@ sourceCpp("/sciclone/home00/geogdan/SimTests/demo/splitc.cpp")
 CT_src <- "/sciclone/home00/geogdan/SimTests/demo/CT_functions.R"
 TOT_src <- "/sciclone/home00/geogdan/SimTests/demo/TOT_functions.R"
 sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
-map_out <- "/sciclone/home00/geogdan/M3/"
+map_out <- "/sciclone/home00/geogdan/M4/"
 
 #detach("package:MatchIt", unload=TRUE)
 load_all("/sciclone/home00/geogdan/SimTests/R")
+
 
 
 #1 3800.41856568 0.90376081592 -45.0 45.0 -22.5 22.5 3.21749654825 0.250852506018 0.448021052911 4.27592030555 0.0684864449219 0.29100048171 1 0.330411927736 3.83573033709 1.88067542642 0.698254286741 0.437623061042 10 2.58494466138 /sciclone/home00/geogdan/AlphaSims/test_0.csv 0.954552979835 0.539550663469 0.164665770447
@@ -30,7 +31,7 @@ Args <- commandArgs(trailingOnly = TRUE)
 if(length(Args) == 0)
 {
   #Exception for running the script directly without a call.
-Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "750", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "50000", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/may_a/test_0.csv", "0.954552979835", "0.539550663469", "50000")
+Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "750", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "750", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/may_a/test_0.csv", "0.954552979835", "0.539550663469", "50000")
 }
 
 
@@ -126,7 +127,7 @@ treatment.predictions@data$baseline.matchit <-
 # Note this is a best case for Spatial PSM, as we give the true vrange.
 # -----------------------------------------------------------------------------
 spatial.opts <- list(decay.model = "threshold",
-                     threshold = (spill.vrange/111.32))
+                     threshold = (spill.vrange/111.32/1000))
 
 spatial.trueThreshold <- matchit(treatment.status ~ modelVar, data= model_dta,
                                  method = "nearest", distance = "logit",
@@ -140,7 +141,66 @@ treatment.predictions@data$spatialPSM <-
   summary(spatial.trueThreshold.model)$coefficients[2] * 
   treatment.predictions$treatment.status
 
+# -----------------------------------------------------------------------------
+# GWR with MatchIt
+#Note this is a best case for GWR, as we give it the true range.
+# -----------------------------------------------------------------------------
+treatment.predictions@data$gwr <- NA
+sum_trt <- 0
+cnt_trt <- 0
+for (i in 1:length(treatment.predictions))
+{
+  it_dfa <- model_dta
+  if(treatment.predictions@data$treatment.status[i] == 1)
+  {
+  it_dfa@data$dists <- as.vector(spDists(model_dta@coords, treatment.predictions[i, ]@coords, longlat=TRUE))
+  it_dfa <- it_dfa[it_dfa@data$dists <= spill.vrange,]
+  
+  mod_it_dfa <- it_dfa[,names(it_dfa@data) %in% c("treatment.status", "modelVar", "modelOutcome")]
+  
 
+  result = tryCatch(
+    gwr.matchit <- matchit(treatment.status ~ modelVar, data= mod_it_dfa@data,
+                              method="nearest", distance="logit",
+                              caliper=cal, calclosest=FALSE, calrandom=FALSE), 
+    error = function(e) {
+      print(e) 
+    return("Error")})
+
+
+  if(result == "Error")
+  {
+    treatment.predictions@data$gwr[[i]] <- NA
+    result = "Reset"
+  }
+  
+  else
+  {
+  gwr.model <- lm(modelOutcome ~ treatment.status +  modelVar,
+                       data=match.data(gwr.matchit))
+  
+  treatment.predictions@data$gwr[[i]]<- 
+    summary(gwr.model)$coefficients[2]
+  
+  sum_trt <- sum_trt + summary(gwr.model)$coefficients[2]
+  cnt_trt <- cnt_trt + 1
+  }
+  }
+  else
+  {
+    treatment.predictions@data$gwr[[i]] <- 0
+  }
+  
+}
+
+
+for (i in 1:length(treatment.predictions))
+{
+  if(is.na(treatment.predictions@data$gwr[[i]]))
+  {
+  treatment.predictions@data$gwr[[i]] <- sum_trt / cnt_trt
+  }
+}
 
 # -----------------------------------------------------------------------------
 # Create coordinates for the trees to split along.
@@ -262,6 +322,7 @@ results["sample_size"]<- NA
 results["tree_split_lim"] <- NA
 results["nrandom"] <- NA
 results["ct_split_count"] <- NA
+results["trt_prc"] <- NA
 
 results["spill.magnitude"][1,] <- spill.magnitude
 results["xvar_error_psill"][1,]  <- xvar_error_psill
@@ -281,6 +342,7 @@ results["sample_size"][1,] <- sample_size
 results["tree_split_lim"][1,] <- per_split_lim
 results["nrandom"][1,] <- nrandom
 results["ct_split_count"][1,] <- length(unique(fit_ctpred$where))
+results["trt_prc"][1,] <- trt_prc
 
 
 
@@ -290,7 +352,10 @@ results["ct_split_count"][1,] <- length(unique(fit_ctpred$where))
 # -----------------------------------------------------------------------------
  map_trt <- treatment.predictions[names(treatment.predictions) != "tot.pred"]
  map_trt <- map_trt[names(map_trt) != "baseline"]
- map_trt <- map_trt[names(map_trt) != "baseline.matchit"]
+ 
+ 
+ #Make the treated areas more evident
+ map_trt@data$treatment.status <- map_trt@data$treatment.status * 99
  
  pal = brewer.pal(9,"Greens")
  brks = c(0.0,0.75,1.25,1.5,1.75,2.0,2.5,100)
