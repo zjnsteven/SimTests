@@ -85,6 +85,7 @@ per_split_lim <- tree_split_lim / sample_size
 
 
 iterations <- 1
+iteration = iterations
 results <- data.frame(
   id=c(1:iterations)
 )
@@ -103,7 +104,7 @@ ptm <- proc.time()
 
 
 loginfo("Total Size %d",nrandom, logger=paste("simtest.", iteration, ".", "Data", sep="") )
-loginfo("Sample Size %d",sample_size, logger=paste("simtest.", iteration, ".", "Data", sep=""))
+loginfo("Sample Size %f",sample_size, logger=paste("simtest.", iteration, ".", "Data", sep=""))
 loginfo("Tree Split Limit %d",tree_split_lim,paste("simtest.", iteration, ".", "Tree", sep="") )
 
 
@@ -482,10 +483,17 @@ fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) 
 #}
 
 #print(fit_ctpred$frame)
-treesummary = table(it_ctpred$frame$var)
+treesummary = table(fit_ctpred$frame$var)
+
+if(length(treesummary) == 1){
+  logwarn("no split", logger=paste("simtest.", iteration, ".", "CT", sep=""))
+}
+
 for(i in 1:length(treesummary)){
   loginfo("split covariates: %s, number: %d", rownames(treesummary)[i],treesummary[i] ,logger=paste("simtest.", iteration, ".", "CT", sep=""))
 }
+
+
 
 #Total Outcome - CT
 
