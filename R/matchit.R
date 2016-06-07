@@ -5,7 +5,6 @@ matchit <- function(formula, data, method="nearest", distance="logit",
   # ---------------------------------------------------------------------------
   # spatial input format checks
   spatial.options$is.spatial <- check.is.spatial(data)
-
   if (spatial.options$is.spatial) {
 
     if ('ignore.spatial' %in% names(spatial.options) &&
@@ -189,7 +188,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
                                    y=coordinates(spatial.data)[, 2],
                                    z=distance, increment=5, latlon=TRUE,
                                    na.rm=TRUE, resamp=50, quiet=TRUE)
-
+      
       spatial.options$threshold <- as.numeric(correlogram_data$x.intercept)
 
       # print(correlogram_data)

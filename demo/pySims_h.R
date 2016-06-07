@@ -10,7 +10,8 @@ library(classInt)
 library(RColorBrewer)
 library(methods)
 library(partykit)
-
+library(stargazer)
+library(R2HTML)
 
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
@@ -18,10 +19,12 @@ sourceCpp("/sciclone/home00/geogdan/SimTests/demo/splitc.cpp")
 CT_src <- "/sciclone/home00/geogdan/SimTests/demo/CT_functions.R"
 TOT_src <- "/sciclone/home00/geogdan/SimTests/demo/TOT_functions.R"
 sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
-map_out <- "/sciclone/home00/geogdan/M4/"
+map_out <- "/sciclone/home00/geogdan/M7/"
 
 #detach("package:MatchIt", unload=TRUE)
 load_all("/sciclone/home00/geogdan/SimTests/R")
+
+
 
 
 
@@ -31,7 +34,7 @@ Args <- commandArgs(trailingOnly = TRUE)
 if(length(Args) == 0)
 {
   #Exception for running the script directly without a call.
-Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "750", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "750", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/may_a/test_0.csv", "0.954552979835", "0.539550663469", "50000")
+Args <- c("1", "3800.41856568", "0.90376081592", "-45.0", "45.0", "-22.5", "22.5", "750", "0.250852506018", "0.448021052911", "4.27592030555", "0.0684864449219", "0.29100048171", "1", "0.330411927736", "750", "1.88067542642", "0.698254286741", "0.437623061042", "10", "2.58494466138", "/sciclone/home00/geogdan/may_a/test_0.csv", "0.954552979835", "0.539550663469", "50000", ".20", ".15", "0.2")
 }
 
 
@@ -65,11 +68,16 @@ spill.vrange = as.numeric(Args[16])
 spill.magnitude= as.numeric(Args[17])
 cal= as.numeric(Args[18])
 sample_size = as.numeric(Args[19])
-tree_split_lim = 5 
+tree_split_lim = as.numeric(Args[20]) 
 mod_error.vrange= as.numeric(Args[21])
 xvar_psill=as.numeric(Args[23])
 mod_error_psill=as.numeric(Args[24])
 trt_spill_sill=as.numeric(Args[25])
+tree_thresh = as.numeric(Args[26])
+thresh_est = as.numeric(Args[27])
+trtcon_overlap = as.numeric(Args[28])
+
+vcut <- (thresh_est * spill.vrange) + spill.vrange
 
 
 per_split_lim <- tree_split_lim / (sample_size * nrandom)
@@ -126,8 +134,9 @@ treatment.predictions@data$baseline.matchit <-
 # Spatial PSM Matching Estimate
 # Note this is a best case for Spatial PSM, as we give the true vrange.
 # -----------------------------------------------------------------------------
+
 spatial.opts <- list(decay.model = "threshold",
-                     threshold = (spill.vrange/111.32/1000))
+                     threshold = vcut)
 
 spatial.trueThreshold <- matchit(treatment.status ~ modelVar, data= model_dta,
                                  method = "nearest", distance = "logit",
@@ -154,7 +163,7 @@ for (i in 1:length(treatment.predictions))
   if(treatment.predictions@data$treatment.status[i] == 1)
   {
   it_dfa@data$dists <- as.vector(spDists(model_dta@coords, treatment.predictions[i, ]@coords, longlat=TRUE))
-  it_dfa <- it_dfa[it_dfa@data$dists <= spill.vrange,]
+  it_dfa <- it_dfa[it_dfa@data$dists <= vcut,]
   
   mod_it_dfa <- it_dfa[,names(it_dfa@data) %in% c("treatment.status", "modelVar", "modelOutcome")]
   
@@ -243,6 +252,10 @@ for(i in 1:nrow(trans_dta))
 }
 trans_dta@data$transOutcome <- unlist(transOutcome)
 
+#Threshold Tree Data
+trans_dta <- trans_dta[!(trans_dta@data$m1.pscore >= (1-tree_thresh)),]
+trans_dta <- trans_dta[!(trans_dta@data$m1.pscore <= tree_thresh),]
+
 # -----------------------------------------------------------------------------
 # Transformed Outcome Tree
 # -----------------------------------------------------------------------------
@@ -323,6 +336,10 @@ results["tree_split_lim"] <- NA
 results["nrandom"] <- NA
 results["ct_split_count"] <- NA
 results["trt_prc"] <- NA
+results["tree_thresh"] <- NA
+results["vcut"] <- NA
+results["thresh_est"] <- NA
+results["trtcon_overlap"] <- NA
 
 results["spill.magnitude"][1,] <- spill.magnitude
 results["xvar_error_psill"][1,]  <- xvar_error_psill
@@ -343,6 +360,10 @@ results["tree_split_lim"][1,] <- per_split_lim
 results["nrandom"][1,] <- nrandom
 results["ct_split_count"][1,] <- length(unique(fit_ctpred$where))
 results["trt_prc"][1,] <- trt_prc
+results["tree_thresh"][1,] <- tree_thresh
+results["vcut"][1,] <- vcut
+results["thresh_est"][1,] <- thresh_est
+results["trtcon_overlap"][1,] <- trtcon_overlap
 
 
 
@@ -351,6 +372,8 @@ results["trt_prc"][1,] <- trt_prc
 # Output Visualizations
 # -----------------------------------------------------------------------------
  map_trt <- treatment.predictions[names(treatment.predictions) != "tot.pred"]
+ map_trt <- treatment.predictions[names(treatment.predictions) != "baseline.matchit"]
+ map_trt <- treatment.predictions[names(treatment.predictions) != "spatialPSM"]
  map_trt <- map_trt[names(map_trt) != "baseline"]
  
  
@@ -360,12 +383,64 @@ results["trt_prc"][1,] <- trt_prc
  pal = brewer.pal(9,"Greens")
  brks = c(0.0,0.75,1.25,1.5,1.75,2.0,2.5,100)
 map_out_path <- paste(map_out, "vsm",version, "_", spill.magnitude, ".png", sep="")
+map_html_path <- paste("vsm",version, "_", spill.magnitude, ".png", sep="")
+html_out_path <- paste("vsm",version, "_", spill.magnitude, sep="")
+tree_out_path <- paste(map_out, "tree",version, "_", spill.magnitude, ".png", sep="")
+tree_out_html<- paste("tree",version, "_", spill.magnitude, ".png", sep="")
 title.v <- paste("Mag:",spill.magnitude," Treat Range:",spill.vrange," RunID:", version, sep="")
-png(filename=map_out_path)
-print(spplot(map_trt, zcol=names(map_trt)[names(map_trt) != "id"],cuts=brks,col.regions=pal, col="transparent",
-       main = list(label=title.v), cex=0.5))
 
- dev.off()
+png(filename=map_out_path)
+maps <- spplot(map_trt, zcol=names(map_trt)[names(map_trt) != "id"],cuts=brks,col.regions=pal, col="transparent",
+       main = list(label=title.v), cex=0.5)
+print(maps)
+dev.off()
+
+png(filename=tree_out_path)
+prp(fit_ctpred, main="Causal Tree")
+dev.off()
+
+
+
+res_sum <- stargazer(treatment.predictions@data[treatment.predictions@data$treatment.status == 1,], type="html", omit=c("id"))
+
+inputs <- stargazer(results, type="html", omit.summary.stat = c("n", "max", "min", "sd"), 
+          omit=c("id", "trueTreatment_quant", "trueTreatment_tot", "trueTreatment_alloc",
+                 "trueTreatment", "baseline.lm_quant", "baseline.lm_tot", "baseline.lm_alloc",
+                 "baseline.lm", "baseline.matchit_quant", "baseline.matchit_tot",
+                 "baseline.matchit_alloc", "baseline.matchit", "spatialPSM_quant", "spatialPSM_tot",
+                 "spatialPSM_alloc", "spatialPSM", "gwr_quant", "gwr_tot", "gwr_alloc", "gwr", "tot.pred_quant",
+                 "tot.pred_tot", "tot.pred_alloc", "tot.pred", "ct.pred_quant", "ct.pred_tot", "ct.pred_alloc",
+                 "ct.pred"))
+
+HTMLfile <- HTMLInitFile(map_out, filename=html_out_path)
+HTML("<table><tr><td>")
+HTML(paste("<IMG src=", map_html_path, ">", sep=""))
+HTML("</td><td>")
+HTML(inputs, file=HTMLfile)
+HTML("</td></tr><tr><td>")
+HTML(paste("<IMG src=", tree_out_html, ">"))
+HTML("</td><td>")
+HTML(res_sum, file=HTMLfile)
+HTML("</td></tr></table>")
+HTMLEndFile()
+
+fr <- readLines(HTMLfile)
+title <- fr[3] 
+html_refresh_tags <- '<meta http-equiv="cache-control" content="no-cache, must-revalidate, post-check=0, pre-check=0">
+  <meta http-equiv="expires" content="Sat, 31 Oct 2014 00:00:00 GMT">
+  <meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="refresh" content="15" />'
+fr[7] <- ""
+fr[6] <- ""
+fr[5] <- ""
+fr[3] <- paste(title, html_refresh_tags, sep="")
+fr[18] <- "<body>"
+writeLines(fr, HTMLfile)
+
+
+
+
+
 
  
  

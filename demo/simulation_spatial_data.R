@@ -78,7 +78,7 @@ spdf@data$modelError <- mod.error.sim$sim1 * mod_error.magnitude
 #Generating the Treatment Variable
 # -----------------------------------------------------------------------------
 
-temp_rand <- spdf@data$trueVar + (runif(length(spdf@data$trueVar),0.0,1.0) * spdf@data$trueVar)
+temp_rand <- spdf@data$trueVar + (runif(length(spdf@data$trueVar),0.0,trtcon_overlap) * spdf@data$trueVar)
 
 treatment.binary <- ifelse(temp_rand> quantile(temp_rand, 
                                                         (1-trt_prc)), 1, 0)

@@ -46,7 +46,6 @@ distance.decay.exponential.semivariance <- function(x, thresh) {
 
 
 run.distance.decay <- function(thresh, dist, func) {
-
   if (class(dist) == "matrix") {
     weights <- apply(dist, MARGIN=c(1, 2), FUN=func, thresh=thresh)
   } else {
