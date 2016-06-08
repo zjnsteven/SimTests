@@ -86,9 +86,29 @@ tree_thresh = as.numeric(Args[26])
 thresh_est = as.numeric(Args[27])
 trtcon_overlap = as.numeric(Args[28])
 
-print(tree_thresh)
-print(thresh_est)
-print(trtcon_overlap)
+loginfo("maximum amount of spatial covariation for covariates %f",xvar_error_psill, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("latitude and longitude bound %f, %f, %f, %f",minx, maxx, miny, maxy , logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+
+loginfo("distance threshold for covariates %f",var1_vrange, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("total error in the covarite  %f",var1_error, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("prop_acc  %f",prop_acc, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("the range of error for the covariate  %f",var1_error_vrange, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("error coefficient  %f",mod_error_magnitude, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("the pecentage of treated points  %f",trt_prc, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("treatment coefficient  %f",theta, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+
+loginfo("covariate coefficient  %f",beta, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("distance of treatment effect %f",spill_vrange, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("coefficient of spill_vrange %f",spill_magnitude, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("distance of cov error %f",mod_error_vrange, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("maximum amount of spatial covariation for covariates for errors %f",xvar_error_psill, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("maximum amount of saptial cov error  %f",mod_error_psill, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("magnitude of treatment spillover  %f",trt_spill_sill, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("Total Size %d",nrandom, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("Sample Size %f",sample_size, logger=paste("simtest.", iteration, ".", "Model.parameter", sep=""))
+loginfo("Tree Split Limit %d",tree_split_lim,paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+
+
 
 vcut <- (thresh_est * spill.vrange) + spill.vrange
 

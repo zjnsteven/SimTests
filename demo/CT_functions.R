@@ -65,6 +65,7 @@ for(l in 1:length(alphacandidate)){
   alpha = alphacandidate[l]
   error = 0
   treesize = 0
+  loginfo("alpha index %d value %f", l, alpha, logger=paste("simtest.", iteration, ".", "CT", sep="") )
   for (i in 1:k){
     trainingset <- subset(crxvdata, id %in% list[-i])
     testset <- subset(crxvdata, id %in% c(i))
@@ -72,8 +73,7 @@ for(l in 1:length(alphacandidate)){
                   trainingset,
                   control = rpart.control(cp = alpha,minsplit = tree_split_lim),
                   method=alist)
-    
-    
+    temperr = 0
     treesize = treesize + dim(fit1$frame[which(fit1$frame$var=="<leaf>"),])[1]
     pt = predict(fit1,testset,type = "matrix")
     y = data.frame(pt)
@@ -81,9 +81,24 @@ for(l in 1:length(alphacandidate)){
     idx = as.numeric(rownames(testset))
     dbidx = as.numeric(rownames(crxvdata))
     for(pid in 1:(dim(testset)[1])){
-      id = match(idx[pid],dbidx)
-      error = error + (crxvdata$transOutcome[id] - val[pid])^2
+      id = match(idx[pid],dbidx) 
+      if(any(is.na(id))){
+        logerror("id has na", logger=paste("simtest.", iteration, ".", "CT", sep=""))
+      }     
+      if(any(is.na(pid))){
+        logerror("pid has na", logger=paste("simtest.", iteration, ".", "CT", sep=""))
+      } 
+      temperr = temperr + (crxvdata$transOutcome[id] - val[pid])^2
+      
     }
+    if(is.numeric(temperr)){
+      loginfo("alpha id %d fold %d error %f", l, i ,temperr, logger=paste("simtest.", iteration, ".", "CT", sep=""))
+      error = error + temperr
+    }
+    else{
+      logerror("temperr is not numeric", logger=paste("simtest.", iteration, ".", "CT", sep=""))
+    }
+    
   }
   
   tsize = c(tsize,treesize/k)
@@ -93,13 +108,23 @@ for(l in 1:length(alphacandidate)){
   else{
     errset[l] = error/k
   }
-  msg = paste(l,": ",errset[l]*k,sep="")
+  loginfo("alpha id %d  error avg %f", l, errset[l], logger=paste("simtest.", iteration, ".", "CT", sep=""))
 }
 
 tsize = tsize[-1]
 alpha_res = alphacandidate[which.min(errset)]
 
-
-fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2 + trans_dist,
+loginfo("best alpha %f", alpha_res, logger=paste("simtest.", iteration, ".", "CT", sep=""))
+fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
                     crxvdata, control=rpart.control(minsplit=tree_split_lim,cp=alpha_res),
                     method=alist)
+
+treesummary = table(fit_ctpred$frame$var)
+
+if(length(treesummary) == 1){
+  logwarn("no split", logger=paste("simtest.", iteration, ".", "CT", sep=""))
+}
+
+for(i in 1:length(treesummary)){
+  loginfo("split covariates: %s, number: %d", rownames(treesummary)[i],treesummary[i] ,logger=paste("simtest.", iteration, ".", "CT", sep=""))
+}
