@@ -28,7 +28,7 @@ while c < iterations:
     miny = "-22.5"
     maxy = "22.5"
 
-    var1_vrange = "2000"#str(250 + random.random()*2500)
+    var1_vrange = "3000"#str(250 + random.random()*2500)
     var1_error = "0.1"#str(0.1 + random.random()*0.9)
     prop_acc = "1.0"#str(0.1 + random.random()*.75)
     var1_error_vrange = "1000"#str(250 + random.random()*2500)
