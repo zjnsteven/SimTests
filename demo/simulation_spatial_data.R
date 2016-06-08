@@ -135,6 +135,10 @@ for (i in 1:nrandom) {
   }
 print(head(spdf@data))
 
+#Temporarily turn transdist off - working on appropriate spillover
+#criterion
+spdf@data$trans_dist <- 0
+
 spdf@data$tmp.spillover.weights[is.na(spdf@data$tmp.spillover.weights)] <- 0
 #vgm.spillover$gamma[vgm.spillover$gamma < 0] <- 0
 print("tmp.spillover")

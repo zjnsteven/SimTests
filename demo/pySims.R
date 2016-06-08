@@ -10,17 +10,25 @@ library(classInt)
 library(RColorBrewer)
 library(methods)
 library(partykit)
+library(logging)
+basicConfig()
 
 
+path_base = "/sciclone/home00/geogdan/SimTests/"
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp("/sciclone/home00/geogdan/SimTests/demo/splitc.cpp")
-CT_src <- "/sciclone/home00/geogdan/SimTests/demo/CT_functions.R"
-sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
-map_out <- "/sciclone/home00/geogdan/M3/"
+
+
+
+sourceCpp(paste(path_base, "demo/splitc.cpp", sep=""))
+CT_src <- paste(path_base, "demo/CT_functions.R", sep="")
+sim_src <- paste(path_base, "demo/simulation_spatial_data.R", sep="")
+map_out <- "/sciclone/home00/geogdan/jM/"
+
 
 #detach("package:MatchIt", unload=TRUE)
-load_all("/sciclone/home00/geogdan/SimTests/R")
+#load_all("/sciclone/home00/geogdan/SimTests/R")
+load_all(paste(path_base,"R",sep=""))
 
 #1 3800.41856568 0.90376081592 -45.0 45.0 -22.5 22.5 3.21749654825 0.250852506018 0.448021052911 4.27592030555 0.0684864449219 0.29100048171 1 0.330411927736 3.83573033709 1.88067542642 0.698254286741 0.437623061042 10 2.58494466138 /sciclone/home00/geogdan/AlphaSims/test_0.csv 0.954552979835 0.539550663469 0.164665770447
 Args <- commandArgs(trailingOnly = TRUE)
@@ -36,6 +44,7 @@ out_path=Args[22]
 out_itDta_path = paste(substr(out_path, 1, nchar(out_path)-4),"_dta.csv",sep="")
 nums = as.numeric(Args)
 
+addHandler(writeToFile, logger=paste("simtest.",version,sep=""), file="/sciclone/home00/geogdan/logs/simtest.log")
 
 
 # -----------------------------------------------------------------------------
@@ -69,14 +78,37 @@ mod_error_psill=as.numeric(Args[24])
 trt_spill_sill=as.numeric(Args[25])
 p <- 1
 
-print("Total Size / Sample Size / Tree Split Limit:")
-print(nrandom)
-print(sample_size)
-print(tree_split_lim)
+loginfo("maximum amount of spatial covariation for covariates %f",xvar_error_psill, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("latitude and longitude bound %f, %f, %f, %f",minx, maxx, miny, maxy , logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+
+loginfo("distance threshold for covariates %f",var1_vrange, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("total error in the covarite  %f",var1_error, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("prop_acc  %f",prop_acc, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("the range of error for the covariate  %f",var1_error_vrange, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("error coefficient  %f",mod_error_magnitude, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("the pecentage of treated points  %f",trt_prc, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("treatment coefficient  %f",theta, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+
+loginfo("covariate coefficient  %f",beta, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("distance of treatment effect %f",spill_vrange, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("coefficient of spill_vrange %f",spill_magnitude, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("distance of cov error %f",mod_error_vrange, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("maximum amount of spatial covariation for covariates for errors %f",xvar_error_psill, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("maximum amount of saptial cov error  %f",mod_error_psill, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("magnitude of treatment spillover  %f",trt_spill_sill, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+
+#print("Total Size / Sample Size / Tree Split Limit:")
+#print(nrandom)
+#print(sample_size)
+#print(tree_split_lim)
+#loginfo("Total Size %d / Sample Size %d / Tree Split Limit %d :", nrandom, sample_size, tree_split_lim, logger="")
+
+
 per_split_lim <- tree_split_lim / sample_size
 
 
 iterations <- 1
+iteration = iterations
 results <- data.frame(
   id=c(1:iterations)
 )
@@ -92,6 +124,12 @@ results_nospill <- data.frame(
 
 
 ptm <- proc.time()
+
+
+loginfo("Total Size %d",nrandom, logger=paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+loginfo("Sample Size %f",sample_size, logger=paste("simtest.", iteration, ".", "Model.parameter", sep=""))
+loginfo("Tree Split Limit %d",tree_split_lim,paste("simtest.", iteration, ".", "Model.parameter", sep="") )
+
 
 # -----------------------------------------------------------------------------
 # Data Simulation
@@ -403,11 +441,12 @@ for(l in 1:length(alphacandidate)){
   alpha = alphacandidate[l]
   error = 0
   treesize = 0
-  print("--")
-  print("Alpha (alphacandidate[l]:)")
-  print(l)
-  print(alpha)
-  print("--")
+  #print("--")
+  #print("Alpha (alphacandidate[l]:)")
+  #print(l)
+  #print(alpha)
+  #print("--")
+  loginfo("alpha index %d value %f", l, alpha, logger=paste("simtest.", iteration, ".", "CT", sep="") )
   for (i in 1:k){
     trainingset <- subset(crxvdata, id %in% list[-i])
     testset <- subset(crxvdata, id %in% c(i))
@@ -422,6 +461,7 @@ for(l in 1:length(alphacandidate)){
     #  }
     
     #  else{
+    temperr = 0
     treesize = treesize + dim(fit1$frame[which(fit1$frame$var=="<leaf>"),])[1]
     pt = predict(fit1,testset,type = "matrix")
     y = data.frame(pt)
@@ -434,9 +474,11 @@ for(l in 1:length(alphacandidate)){
       id = match(idx[pid],dbidx)
       #print(paste("error before:", error,"val",val[pid],"tranoutcome",crxvdata$transOutcome[id]))
       
-      error = error + (crxvdata$transOutcome[id] - val[pid])^2
-      #print(error)
+      temperr = temperr + (crxvdata$transOutcome[id] - val[pid])^2
+      
     }
+    loginfo("alpha id %d fold %d error %f", l, i ,temperr, logger=paste("simtest.", iteration, ".", "CT", sep=""))
+    error = error + temperr
     #}
     # print(paste("error after:", error))
   }
@@ -448,24 +490,30 @@ for(l in 1:length(alphacandidate)){
   else{
     errset[l] = error/k
   }
-  msg = paste(l,": ",errset[l]*k,sep="")
+  #msg = paste(l,": ",errset[l]*k,sep="")
   #print(msg)
+  loginfo("alpha id %d  error avg %f", l, errset[l], logger=paste("simtest.", iteration, ".", "CT", sep=""))
 }
 
 tsize = tsize[-1]
 alpha_res = alphacandidate[which.min(errset)]
-print(alpha_res)
 
-fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2 + trans_dist,
+loginfo("best alpha %f", alpha_res, logger=paste("simtest.", iteration, ".", "CT", sep=""))
+fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
                     crxvdata, control=rpart.control(minsplit=tree_split_lim,cp=alpha_res),
                     method=alist)
-#prp(fit_ctpred)
-#res = rep(0,length(alphalist)-1)
-#for(j in 2:(length(alphalist)-1)){
-#  res[j] = sqrt(alphalist[j]*alphalist[j+1])
-#}
 
-print(fit_ctpred$frame)
+treesummary = table(fit_ctpred$frame$var)
+
+if(length(treesummary) == 1){
+  logwarn("no split", logger=paste("simtest.", iteration, ".", "CT", sep=""))
+}
+
+for(i in 1:length(treesummary)){
+  loginfo("split covariates: %s, number: %d", rownames(treesummary)[i],treesummary[i] ,logger=paste("simtest.", iteration, ".", "CT", sep=""))
+}
+
+
 
 #Total Outcome - CT
 

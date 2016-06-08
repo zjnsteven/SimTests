@@ -12,17 +12,26 @@ library(methods)
 library(partykit)
 library(stargazer)
 library(R2HTML)
+library(logging)
+basicConfig()
+
+path_base = "/sciclone/home00/geogdan/SimTests/"
+Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+Sys.setenv("PKG_LIBS"="-fopenmp")
+
+
+
+sourceCpp(paste(path_base, "demo/splitc.cpp", sep=""))
+CT_src <- paste(path_base, "demo/CT_functions.R", sep="")
+TOT_src <- paste(path_base, "demo/TOT_functions.R", sep="")
+sim_src <- paste(path_base, "demo/simulation_spatial_data.R", sep="")
+map_out <- "/sciclone/home00/geogdan/jM/"
 
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp("/sciclone/home00/geogdan/SimTests/demo/splitc.cpp")
-CT_src <- "/sciclone/home00/geogdan/SimTests/demo/CT_functions.R"
-TOT_src <- "/sciclone/home00/geogdan/SimTests/demo/TOT_functions.R"
-sim_src <- "/sciclone/home00/geogdan/SimTests/demo/simulation_spatial_data.R"
-map_out <- "/sciclone/home00/geogdan/M7/"
 
 #detach("package:MatchIt", unload=TRUE)
-load_all("/sciclone/home00/geogdan/SimTests/R")
+load_all(paste(path_base,"R",sep=""))
 
 
 
@@ -76,6 +85,10 @@ trt_spill_sill=as.numeric(Args[25])
 tree_thresh = as.numeric(Args[26])
 thresh_est = as.numeric(Args[27])
 trtcon_overlap = as.numeric(Args[28])
+
+print(tree_thresh)
+print(thresh_est)
+print(trtcon_overlap)
 
 vcut <- (thresh_est * spill.vrange) + spill.vrange
 
@@ -169,9 +182,11 @@ for (i in 1:length(treatment.predictions))
   
 
   result = tryCatch(
+
     gwr.matchit <- matchit(treatment.status ~ modelVar, data= mod_it_dfa@data,
                               method="nearest", distance="logit",
                               caliper=cal, calclosest=FALSE, calrandom=FALSE), 
+
     error = function(e) {
       print(e) 
     return("Error")})
@@ -214,6 +229,7 @@ for (i in 1:length(treatment.predictions))
 # -----------------------------------------------------------------------------
 # Create coordinates for the trees to split along.
 # -----------------------------------------------------------------------------
+print("tree data prod")
 trans_dta <- model_dta
 trans_dta@data["coord1"] <- coordinates(model_dta)[,1]
 trans_dta@data["coord2"] <- coordinates(model_dta)[,2]
@@ -233,6 +249,7 @@ trans_dta <- trans_dta[(trans_dta@data$m1.pscore != 0 &
 # -----------------------------------------------------------------------------
 # Calculate the transformed outcome for the trees.
 # -----------------------------------------------------------------------------
+print("transofrmed outcome")
 transOutcome <- list(rep(0,nrow(trans_dta)))
 
 for(i in 1:nrow(trans_dta))
@@ -259,12 +276,14 @@ trans_dta <- trans_dta[!(trans_dta@data$m1.pscore <= tree_thresh),]
 # -----------------------------------------------------------------------------
 # Transformed Outcome Tree
 # -----------------------------------------------------------------------------
+print("TOT")
 source(TOT_src)
 treatment.predictions@data$tot.pred <-  res * treatment.predictions$treatment.status
 
 # -----------------------------------------------------------------------------
 # Causal Tree
 # -----------------------------------------------------------------------------
+print("CT")
 source(CT_src)
 treatment.predictions@data$ct.pred <-  predict(fit_ctpred,newdata=spdf@data) * 
   treatment.predictions$treatment.status
